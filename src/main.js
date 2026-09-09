@@ -27,6 +27,7 @@ const state = {
   screen: 'home', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
   online: false, socket: null, roomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
   musicEnabled: false, musicContext: null, musicTimer: null, musicStep: 0, musicPattern: null,
+  roomFeedConnecting: false, roomFeedConnected: false,
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
 }
 
@@ -36,6 +37,7 @@ function render() {
   document.body.className = state.screen === 'battle' ? 'battle-view' : 'home-view'
   app.innerHTML = state.screen === 'home' ? renderHome() : state.screen === 'lobby' ? renderLobby() : renderBattle()
   bindEvents()
+  if (state.screen === 'home' && !state.roomFeedConnected && !state.roomFeedConnecting && !state.socket) connectOnline('list')
 }
 
 function renderLobby() {
@@ -58,8 +60,7 @@ function renderHome() {
       <div class="versus">VS</div>
       ${playerPicker(1, 'JOGADOR 2', 'voss')}
       <button class="primary-button" data-action="start">INICIAR PARTIDA <span>↗</span></button>
-      <button class="music-button" data-action="music">♫ ${state.musicEnabled ? 'DESATIVAR MÚSICA RPG' : 'ATIVAR MÚSICA RPG'}</button>
-      <div class="online-box"><div class="online-heading"><p class="panel-label">JOGAR ONLINE</p><span>AO VIVO</span></div><button class="primary-button small" data-action="create-online">CRIAR SALA</button><button class="primary-button small" data-action="refresh-rooms">ATUALIZAR</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
+      <div class="online-box"><div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div><button class="primary-button small" data-action="create-online">CRIAR SALA</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
     </div>
   </section>`
 }
@@ -138,9 +139,7 @@ function resultPanel() {
 function bindEvents() {
   document.querySelectorAll('[data-player]').forEach((select) => select.addEventListener('change', (event) => { select.dataset.value = event.target.value }))
   document.querySelector('[data-action="start"]')?.addEventListener('click', startGame)
-  document.querySelector('[data-action="music"]')?.addEventListener('click', toggleMusic)
   document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => connectOnline('create'))
-  document.querySelector('[data-action="refresh-rooms"]')?.addEventListener('click', () => connectOnline('list'))
   document.querySelectorAll('[data-room-code-entry]').forEach((button) => button.addEventListener('click', () => connectOnline('join', button.dataset.roomCodeEntry)))
   document.querySelector('[data-action="cancel-online"]')?.addEventListener('click', () => { state.socket?.close(); state.screen = 'home'; state.online = false; render() })
   document.querySelector('[data-action="restart"]')?.addEventListener('click', () => { state.screen = 'home'; render() })
@@ -179,12 +178,6 @@ function startGame() {
   state.players = ids.map((id) => createPlayer(characters[id]))
   state.screen = 'battle'; state.turn = 1; state.phase = 'p1'; state.selections = {}; state.log = []; state.result = ''; state.animation = null; state.online = false; state.onlineWaiting = false; state.opponentChosen = false
   startMusic()
-  render()
-}
-
-function toggleMusic() {
-  if (state.musicEnabled) stopMusic()
-  else startMusic()
   render()
 }
 
@@ -257,7 +250,12 @@ function onlineSocketUrl() {
 function connectOnline(mode, selectedCode = '') {
   const character = document.querySelector(`[data-player="${mode === 'create' ? '0' : '1'}"]`)?.value ?? 'cedric'
   const code = selectedCode || document.querySelector('[data-room-code]')?.value.trim()
+  state.socket?.close()
+  state.socket = null
+  state.roomFeedConnecting = true
+  state.roomFeedConnected = false
   state.onlineError = 'Conectando ao servidor...'
+  if (mode !== 'list') startMusic()
   render()
   let socket
   try {
@@ -270,7 +268,7 @@ function connectOnline(mode, selectedCode = '') {
     return
   }
   state.socket = socket
-  socket.addEventListener('open', () => socket.send(JSON.stringify(mode === 'create' ? { type: 'create', character } : mode === 'join' ? { type: 'join', code, character } : { type: 'list-rooms' })))
+  socket.addEventListener('open', () => { if (mode === 'list') state.roomFeedConnected = true; socket.send(JSON.stringify(mode === 'create' ? { type: 'create', character } : mode === 'join' ? { type: 'join', code, character } : { type: 'list-rooms' })) })
   socket.addEventListener('message', (event) => handleOnlineMessage(JSON.parse(event.data)))
   socket.addEventListener('error', () => { state.onlineError = 'Não foi possível conectar ao servidor. Verifique a internet e tente novamente.'; render() })
   socket.addEventListener('close', () => { if (!state.roomCode || state.screen === 'home') { state.onlineError = 'Conexão encerrada. Tente novamente.'; render() } })
@@ -278,7 +276,7 @@ function connectOnline(mode, selectedCode = '') {
 }
 
 function handleOnlineMessage(message) {
-  if (message.type === 'public-rooms') { state.publicRooms = message.rooms; render(); return }
+  if (message.type === 'public-rooms') { state.publicRooms = message.rooms; state.roomFeedConnecting = false; state.roomFeedConnected = true; state.onlineError = ''; render(); return }
   if (message.type === 'error') { state.onlineError = message.message; state.socket?.close(); state.screen = 'home'; render(); return }
   if (message.type === 'room-created') { state.online = true; state.playerIndex = 0; state.roomCode = message.code; state.screen = 'lobby'; render(); return }
   if (message.type === 'room-ready') {
