@@ -12,6 +12,14 @@ fs.mkdirSync(releasesDir, { recursive: true })
 
 const app = express()
 
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
+
 app.get('/updates/latest.json', (req, res) => {
   if (!fs.existsSync(manifestPath)) {
     return res.status(404).json({ error: 'Nenhuma versão publicada ainda.' })
