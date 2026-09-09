@@ -47,16 +47,23 @@ server.on('connection', (socket) => {
     let message
     try { message = JSON.parse(raw.toString()) } catch { return send(socket, { type: 'error', message: 'Mensagem inválida.' }) }
 
-    if (message.type === 'create') {
+    if (message.type === 'list-rooms') {
+      return send(socket, { type: 'public-rooms', rooms: publicRooms() })
+    }
+
+    if (message.type === 'quick-join') {
+      const openRoom = [...rooms.values()].find((room) => room.players.length < 2 && room.players.some((roomPlayer) => roomPlayer.socket))
+      if (openRoom) {
+        const player = { socket, index: 1, character: message.character, room: openRoom }
+        openRoom.players.push(player); socket.player = player
+        openRoom.players.forEach((roomPlayer) => send(roomPlayer.socket, { type: 'room-ready', code: openRoom.code, index: roomPlayer.index, players: roomState(openRoom), turn: openRoom.turn }))
+        return broadcastRooms()
+      }
       const room = { code: createRoomCode(), turn: 1, choices: new Map(), players: [] }
       const player = { socket, index: 0, character: message.character, room }
       room.players.push(player); rooms.set(room.code, room); socket.player = player
       send(socket, { type: 'room-created', code: room.code, index: 0, players: roomState(room) })
       return broadcastRooms()
-    }
-
-    if (message.type === 'list-rooms') {
-      return send(socket, { type: 'public-rooms', rooms: publicRooms() })
     }
 
     if (message.type === 'join') {

@@ -41,7 +41,7 @@ function render() {
 }
 
 function renderLobby() {
-  return `<section class="home-shell lobby-shell"><div class="brand-mark"><span>LA</span><small>LEET ARENA</small></div><div class="home-copy"><p class="eyebrow">SALA ONLINE</p><h1>${state.roomCode}</h1><p class="intro">Compartilhe este código com o outro jogador. A partida começa quando os dois entrarem.</p></div><div class="setup-panel"><div class="panel-label">AGUARDANDO OPONENTE</div><p class="online-wait">● CONEXÃO ATIVA<br><small>Servidor aguardando o segundo jogador.</small></p><button class="primary-button" data-action="cancel-online">CANCELAR SALA <span>↗</span></button></div></section>`
+  return `<section class="home-shell lobby-shell"><div class="brand-mark"><span>LA</span><small>LEET ARENA</small></div><div class="home-copy"><p class="eyebrow">SALA ONLINE</p><h1>AGUARDANDO</h1><p class="intro">Você está na fila. A partida começa automaticamente quando outro jogador entrar.</p></div><div class="setup-panel"><div class="panel-label">SALA ABERTA</div><p class="online-wait">● CONEXÃO ATIVA<br><small>Aguardando o segundo jogador.</small></p><button class="primary-button" data-action="cancel-online">SAIR DA SALA <span>↗</span></button></div></section>`
 }
 
 function renderHome() {
@@ -60,7 +60,7 @@ function renderHome() {
       <div class="versus">VS</div>
       ${playerPicker(1, 'JOGADOR 2', 'voss')}
       <button class="primary-button" data-action="start">INICIAR PARTIDA <span>↗</span></button>
-      <div class="online-box"><div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div><button class="primary-button small" data-action="create-online">CRIAR SALA</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
+      <div class="online-box"><div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div><button class="primary-button small" data-action="create-online">ENCONTRAR PARTIDA</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
     </div>
   </section>`
 }
@@ -249,7 +249,7 @@ function onlineSocketUrl() {
 
 function connectOnline(mode, selectedCode = '') {
   const character = document.querySelector(`[data-player="${mode === 'create' ? '0' : '1'}"]`)?.value ?? 'cedric'
-  const code = selectedCode || document.querySelector('[data-room-code]')?.value.trim()
+  const code = selectedCode
   state.socket?.close()
   state.socket = null
   state.roomFeedConnecting = true
@@ -268,7 +268,7 @@ function connectOnline(mode, selectedCode = '') {
     return
   }
   state.socket = socket
-  socket.addEventListener('open', () => { if (mode === 'list') state.roomFeedConnected = true; socket.send(JSON.stringify(mode === 'create' ? { type: 'create', character } : mode === 'join' ? { type: 'join', code, character } : { type: 'list-rooms' })) })
+  socket.addEventListener('open', () => { if (mode === 'list') state.roomFeedConnected = true; socket.send(JSON.stringify(mode === 'create' ? { type: 'quick-join', character } : mode === 'join' ? { type: 'join', code, character } : { type: 'list-rooms' })) })
   socket.addEventListener('message', (event) => handleOnlineMessage(JSON.parse(event.data)))
   socket.addEventListener('error', () => { state.onlineError = 'Não foi possível conectar ao servidor. Verifique a internet e tente novamente.'; render() })
   socket.addEventListener('close', () => { if (!state.roomCode || state.screen === 'home') { state.onlineError = 'Conexão encerrada. Tente novamente.'; render() } })
