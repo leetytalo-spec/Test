@@ -1,7 +1,10 @@
+import { registerPlugin } from '@capacitor/core'
+
 const UPDATE_MANIFEST_URL = 'https://leetarena.zorobot.shop/updates/latest.json'
+const ApkUpdater = registerPlugin('ApkUpdater')
 
 function getPlugin() {
-  return window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins?.ApkUpdater : null
+  return window.Capacitor?.isNativePlatform?.() ? ApkUpdater : null
 }
 
 export async function getInstalledVersion() {
