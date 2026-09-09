@@ -55,15 +55,15 @@ function renderHome() {
       <div class="versus">VS</div>
       ${playerPicker(1, 'JOGADOR 2', 'voss')}
       <button class="primary-button" data-action="start">INICIAR PARTIDA <span>↗</span></button>
-      <div class="online-box"><p class="panel-label">PARTIDA ONLINE</p><button class="primary-button small" data-action="create-online">CRIAR SALA</button><button class="primary-button small" data-action="refresh-rooms">ATUALIZAR SALAS</button><div class="public-rooms">${renderPublicRooms()}</div><input data-room-code placeholder="CÓDIGO (opcional)" maxlength="6" inputmode="numeric"><button class="primary-button small" data-action="join-online">ENTRAR POR CÓDIGO</button><p class="online-error">${state.onlineError}</p></div>
+      <div class="online-box"><p class="panel-label">SALAS PÚBLICAS</p><button class="primary-button small" data-action="create-online">CRIAR SALA</button><button class="primary-button small" data-action="refresh-rooms">ATUALIZAR SALAS</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
       <p class="local-note">PROTÓTIPO LOCAL · DOIS JOGADORES NO MESMO DISPOSITIVO</p>
     </div>
   </section>`
 }
 
 function renderPublicRooms() {
-  if (!state.publicRooms.length) return '<p class="muted">Nenhuma sala aberta no momento.</p>'
-  return state.publicRooms.map((room) => `<button class="room-entry" data-room-code-entry="${room.code}"><strong>SALA ${room.code}</strong><small>${room.hostCharacter} · ${room.players}/2 jogadores</small><span>ENTRAR</span></button>`).join('')
+  if (!state.publicRooms.length) return '<p class="muted">Nenhuma sala aberta. Crie uma sala para aparecer aqui.</p>'
+  return state.publicRooms.map((room) => `<button class="room-entry" data-room-code-entry="${room.code}"><strong>${room.hostCharacter.toUpperCase()}</strong><small>${room.players}/2 jogadores</small><span>ENTRAR</span></button>`).join('')
 }
 
 function playerPicker(index, label, fallback) {
@@ -136,7 +136,6 @@ function bindEvents() {
   document.querySelectorAll('[data-player]').forEach((select) => select.addEventListener('change', (event) => { select.dataset.value = event.target.value }))
   document.querySelector('[data-action="start"]')?.addEventListener('click', startGame)
   document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => connectOnline('create'))
-  document.querySelector('[data-action="join-online"]')?.addEventListener('click', () => connectOnline('join'))
   document.querySelector('[data-action="refresh-rooms"]')?.addEventListener('click', () => connectOnline('list'))
   document.querySelectorAll('[data-room-code-entry]').forEach((button) => button.addEventListener('click', () => connectOnline('join', button.dataset.roomCodeEntry)))
   document.querySelector('[data-action="cancel-online"]')?.addEventListener('click', () => { state.socket?.close(); state.screen = 'home'; state.online = false; render() })
