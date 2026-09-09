@@ -25,9 +25,8 @@ const characters = {
 
 const state = {
   screen: 'home', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
-  online: false, socket: null, roomFeedSocket: null, roomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
-  musicEnabled: false, musicContext: null, musicTimer: null, musicStep: 0, musicPattern: null,
-  roomFeedConnecting: false, roomFeedConnected: false,
+  online: false, socket: null, roomFeedSocket: null, roomCode: '', createdRoomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
+  musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false,
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
 }
 
@@ -60,9 +59,29 @@ function renderHome() {
       <div class="versus">VS</div>
       ${playerPicker(1, 'JOGADOR 2', 'voss')}
       <button class="primary-button" data-action="start">INICIAR PARTIDA <span>↗</span></button>
-      <div class="online-box"><div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div><button class="primary-button small" data-action="create-online">CRIAR SALA</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
+      <div class="online-box">
+        <div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div>
+        ${renderCreatedRoomBanner()}
+        ${!state.createdRoomCode ? '<button class="primary-button small" data-action="create-online">CRIAR SALA</button>' : ''}
+        <div class="public-rooms">${renderPublicRooms()}</div>
+        <p class="online-error">${state.onlineError}</p>
+      </div>
     </div>
   </section>`
+}
+
+function renderCreatedRoomBanner() {
+  if (!state.createdRoomCode || !state.online) return ''
+  return `<div class="created-room-banner">
+    <div class="created-room-details">
+      <span class="pulse-dot">●</span>
+      <div>
+        <strong>SALA ABERTA: ${state.createdRoomCode}</strong>
+        <small>Aguardando oponente entrar...</small>
+      </div>
+    </div>
+    <button class="close-room-btn" data-action="close-created-room" title="Fechar sala">✕</button>
+  </div>`
 }
 
 function renderPublicRooms() {
@@ -93,7 +112,23 @@ function renderBattle() {
       </div>
       <aside class="combat-log"><div class="panel-label">REGISTRO DE COMBATE</div><div class="log-list">${state.log.length ? state.log.map((entry) => `<p>${entry}</p>`).join('') : '<p class="muted">As ações do duelo aparecerão aqui.</p>'}</div></aside>
     </div>
+    <button class="surrender-discrete-btn" data-action="prompt-surrender">SAIR</button>
+    ${renderSurrenderModal()}
   </section>`
+}
+
+function renderSurrenderModal() {
+  if (!state.showSurrenderModal) return ''
+  return `<div class="modal-overlay">
+    <div class="modal-card">
+      <p class="modal-title">DESEJA SE RENDER?</p>
+      <p class="modal-sub">Você abandonará a partida atual.</p>
+      <div class="modal-btns">
+        <button class="primary-button small danger" data-action="confirm-surrender">SIM</button>
+        <button class="primary-button small secondary" data-action="cancel-surrender">NÃO</button>
+      </div>
+    </div>
+  </div>`
 }
 
 function lastActionPanel() {
@@ -138,13 +173,23 @@ function resultPanel() {
 
 function bindEvents() {
   document.querySelectorAll('[data-player]').forEach((select) => select.addEventListener('change', (event) => { select.dataset.value = event.target.value }))
-  document.querySelector('[data-action="start"]')?.addEventListener('click', startGame)
-  document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => connectOnline('create'))
-  document.querySelectorAll('[data-room-code-entry]').forEach((button) => button.addEventListener('click', () => connectOnline('join', button.dataset.roomCodeEntry)))
-  document.querySelector('[data-action="cancel-online"]')?.addEventListener('click', () => { state.socket?.close(); state.screen = 'home'; state.online = false; render() })
+  document.querySelector('[data-action="start"]')?.addEventListener('click', () => { startMusic(); startGame(); })
+  document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => { startMusic(); connectOnline('create'); })
+  document.querySelectorAll('[data-room-code-entry]').forEach((button) => button.addEventListener('click', () => { startMusic(); connectOnline('join', button.dataset.roomCodeEntry); }))
+  document.querySelector('[data-action="cancel-online"]')?.addEventListener('click', () => { state.socket?.close(); state.screen = 'home'; state.online = false; state.createdRoomCode = ''; render() })
+  document.querySelector('[data-action="close-created-room"]')?.addEventListener('click', () => {
+    if (state.socket) { state.socket.intentionalClose = true; state.socket.close(); state.socket = null; }
+    state.online = false; state.createdRoomCode = ''; state.roomCode = ''; state.onlineError = ''; render()
+  })
   document.querySelector('[data-action="restart"]')?.addEventListener('click', () => { state.screen = 'home'; render() })
   document.querySelector('[data-action="next-player"]')?.addEventListener('click', confirmSelection)
   document.querySelector('[data-action="skip"]')?.addEventListener('click', skipTurn)
+  document.querySelector('[data-action="prompt-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = true; render(); })
+  document.querySelector('[data-action="cancel-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = false; render(); })
+  document.querySelector('[data-action="confirm-surrender"]')?.addEventListener('click', () => {
+    if (state.socket) { state.socket.intentionalClose = true; state.socket.close(); state.socket = null; }
+    state.online = false; state.roomCode = ''; state.createdRoomCode = ''; state.showSurrenderModal = false; state.screen = 'home'; render();
+  })
   document.querySelectorAll('[data-ability]').forEach((button) => button.addEventListener('click', () => {
     const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
     chooseAbility(phase, button.dataset.ability)
@@ -181,41 +226,28 @@ function startGame() {
   render()
 }
 
-function startMusic() {
-  if (state.musicEnabled) return
-  const AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext
-  if (!AudioContextClass) return
-  state.musicContext = state.musicContext ?? new AudioContextClass()
-  state.musicContext.resume()
-  state.musicPattern = [0, 3, 7, 10, 7, 3, 2, 5].map((note) => note + Math.floor(Math.random() * 2) * 12)
-  state.musicStep = 0
-  state.musicEnabled = true
-  playMusicStep()
-}
+let bgmAudio = null
 
-function playMusicStep() {
-  if (!state.musicEnabled || !state.musicContext) return
-  const context = state.musicContext
-  const root = 146.83
-  const frequency = root * Math.pow(2, state.musicPattern[state.musicStep] / 12)
-  const oscillator = context.createOscillator()
-  const gain = context.createGain()
-  oscillator.type = 'triangle'
-  oscillator.frequency.value = frequency
-  gain.gain.setValueAtTime(0.0001, context.currentTime)
-  gain.gain.exponentialRampToValueAtTime(0.045, context.currentTime + 0.03)
-  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.42)
-  oscillator.connect(gain).connect(context.destination)
-  oscillator.start()
-  oscillator.stop(context.currentTime + 0.45)
-  state.musicStep = (state.musicStep + 1) % state.musicPattern.length
-  state.musicTimer = setTimeout(playMusicStep, 470)
+function startMusic() {
+  if (state.musicEnabled && bgmAudio && !bgmAudio.paused) return
+  if (!bgmAudio) {
+    bgmAudio = new Audio('/assets/audio/bgm.mp3')
+    bgmAudio.loop = true
+    bgmAudio.volume = 0.5
+  }
+  bgmAudio.play().then(() => {
+    state.musicEnabled = true
+  }).catch(() => {
+    state.musicEnabled = false
+  })
 }
 
 function stopMusic() {
   state.musicEnabled = false
-  clearTimeout(state.musicTimer)
-  state.musicTimer = null
+  if (bgmAudio) {
+    bgmAudio.pause()
+    bgmAudio.currentTime = 0
+  }
 }
 
 function createPlayer(character) {
@@ -282,9 +314,9 @@ function connectOnline(mode, selectedCode = '') {
 function handleOnlineMessage(message) {
   if (message.type === 'public-rooms') { state.publicRooms = message.rooms; state.roomFeedConnecting = false; state.roomFeedConnected = true; state.onlineError = ''; render(); return }
   if (message.type === 'error') { state.onlineError = message.message; state.socket?.close(); state.screen = 'home'; render(); return }
-  if (message.type === 'room-created') { state.online = true; state.playerIndex = 0; state.roomCode = message.code; state.screen = 'lobby'; render(); return }
+  if (message.type === 'room-created') { state.online = true; state.playerIndex = 0; state.roomCode = message.code; state.createdRoomCode = message.code; state.screen = 'home'; render(); return }
   if (message.type === 'room-ready') {
-    state.online = true; state.roomCode = message.code; state.turn = message.turn; state.playerIndex = message.index; state.players = message.players.sort((a, b) => a.index - b.index).map((player) => createPlayer(characters[player.character]))
+    state.online = true; state.roomCode = message.code; state.createdRoomCode = ''; state.turn = message.turn; state.playerIndex = message.index; state.players = message.players.sort((a, b) => a.index - b.index).map((player) => createPlayer(characters[player.character]))
     state.phase = `p${state.playerIndex + 1}`; state.screen = 'battle'; render(); return
   }
   if (message.type === 'choice-status' && message.index !== state.playerIndex) { state.opponentChosen = true; render(); return }
@@ -295,8 +327,14 @@ function handleOnlineMessage(message) {
   }
   if (message.type === 'opponent-left') {
     state.onlineWaiting = false
-    state.onlineError = 'Oponente saiu da sala. Aguarde um novo jogador ou entre novamente.'
-    state.screen = 'lobby'
+    state.onlineError = 'Oponente saiu da partida.'
+    state.createdRoomCode = ''
+    state.screen = 'home'
+    if (state.socket) {
+      state.socket.intentionalClose = true
+      state.socket.close()
+      state.socket = null
+    }
     render()
     return
   }

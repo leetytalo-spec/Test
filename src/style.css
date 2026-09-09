@@ -111,3 +111,27 @@ html, body { overflow: hidden; }
 	.home-view .online-box input { padding: 8px; font-size: 12px; }
 	.home-view .local-note { margin-top: 9px; font-size: 8px; }
 }
+
+/* Created room banner on home screen */
+.created-room-banner { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; padding: 8px 10px; border: 1px solid #79d6c2; border-radius: 6px; background: rgba(121, 214, 194, 0.12); }
+.created-room-details { display: flex; align-items: center; gap: 8px; }
+.pulse-dot { color: #79d6c2; font-size: 10px; animation: pulse-blink 1.5s infinite; }
+@keyframes pulse-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.created-room-details strong { display: block; font-size: 12px; color: #79d6c2; font-weight: 700; }
+.created-room-details small { display: block; font-size: 9px; color: #a0b0aa; font-family: 'DM Mono', monospace; }
+.close-room-btn { border: 0; background: transparent; color: #ff8060; font-size: 16px; font-weight: 700; cursor: pointer; padding: 2px 6px; }
+.close-room-btn:hover { color: #ff5533; }
+
+/* Surrender discrete button in battle screen */
+.surrender-discrete-btn { position: fixed; bottom: 8px; right: 10px; z-index: 20; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.5); color: #889990; font: 600 10px 'DM Mono', monospace; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.08em; cursor: pointer; }
+.surrender-discrete-btn:hover { color: #ff8060; border-color: #ff8060; }
+
+/* Modal overlay for surrender confirmation */
+.modal-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); }
+.modal-card { width: 88%; max-width: 300px; padding: 20px 16px; border: 2px solid #d7ad2e; border-radius: 8px; background: #12181b; text-align: center; color: #f7f3eb; }
+.modal-title { margin: 0 0 6px; font-size: 19px; font-weight: 800; letter-spacing: 0.08em; color: #e2bd37; }
+.modal-sub { margin: 0 0 16px; font-size: 12px; color: #9da9a5; }
+.modal-btns { display: flex; justify-content: center; gap: 12px; }
+.modal-btns .primary-button { min-width: 80px; text-align: center; margin: 0; padding: 8px 14px; font-size: 11px; }
+.modal-btns .danger { background: #d93838; color: #fff; }
+.modal-btns .secondary { background: #2e3835; color: #ccc; }
