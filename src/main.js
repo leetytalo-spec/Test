@@ -25,7 +25,7 @@ const characters = {
 
 const state = {
   screen: 'home', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
-  online: false, socket: null, roomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '',
+  online: false, socket: null, roomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
 }
 
@@ -55,10 +55,15 @@ function renderHome() {
       <div class="versus">VS</div>
       ${playerPicker(1, 'JOGADOR 2', 'voss')}
       <button class="primary-button" data-action="start">INICIAR PARTIDA <span>↗</span></button>
-      <div class="online-box"><p class="panel-label">PARTIDA ONLINE</p><button class="primary-button small" data-action="create-online">CRIAR SALA</button><input data-room-code placeholder="CÓDIGO DA SALA" maxlength="6" inputmode="numeric"><button class="primary-button small" data-action="join-online">ENTRAR NA SALA</button><p class="online-error">${state.onlineError}</p></div>
+      <div class="online-box"><p class="panel-label">PARTIDA ONLINE</p><button class="primary-button small" data-action="create-online">CRIAR SALA</button><button class="primary-button small" data-action="refresh-rooms">ATUALIZAR SALAS</button><div class="public-rooms">${renderPublicRooms()}</div><input data-room-code placeholder="CÓDIGO (opcional)" maxlength="6" inputmode="numeric"><button class="primary-button small" data-action="join-online">ENTRAR POR CÓDIGO</button><p class="online-error">${state.onlineError}</p></div>
       <p class="local-note">PROTÓTIPO LOCAL · DOIS JOGADORES NO MESMO DISPOSITIVO</p>
     </div>
   </section>`
+}
+
+function renderPublicRooms() {
+  if (!state.publicRooms.length) return '<p class="muted">Nenhuma sala aberta no momento.</p>'
+  return state.publicRooms.map((room) => `<button class="room-entry" data-room-code-entry="${room.code}"><strong>SALA ${room.code}</strong><small>${room.hostCharacter} · ${room.players}/2 jogadores</small><span>ENTRAR</span></button>`).join('')
 }
 
 function playerPicker(index, label, fallback) {
@@ -132,6 +137,8 @@ function bindEvents() {
   document.querySelector('[data-action="start"]')?.addEventListener('click', startGame)
   document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => connectOnline('create'))
   document.querySelector('[data-action="join-online"]')?.addEventListener('click', () => connectOnline('join'))
+  document.querySelector('[data-action="refresh-rooms"]')?.addEventListener('click', () => connectOnline('list'))
+  document.querySelectorAll('[data-room-code-entry]').forEach((button) => button.addEventListener('click', () => connectOnline('join', button.dataset.roomCodeEntry)))
   document.querySelector('[data-action="cancel-online"]')?.addEventListener('click', () => { state.socket?.close(); state.screen = 'home'; state.online = false; render() })
   document.querySelector('[data-action="restart"]')?.addEventListener('click', () => { state.screen = 'home'; render() })
   document.querySelector('[data-action="next-player"]')?.addEventListener('click', confirmSelection)
@@ -197,26 +204,34 @@ function createPlayer(character) {
 }
 
 function onlineSocketUrl() {
-  const publicServerUrl = 'wss://friendly-telegram-6v4q55q5pwxw25jv-8787.app.github.dev'
-  if (location.hostname === 'localhost' && (location.protocol === 'capacitor:' || location.port !== '5173')) return publicServerUrl
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const codespaceHost = location.hostname.replace(/-\d+\.app\.github\.dev$/, '-8787.app.github.dev')
-  const host = codespaceHost === location.hostname ? `${location.hostname}:8787` : codespaceHost
-  return `${protocol}//${host}`
+  return 'ws://2.25.214.134:8787'
 }
 
-function connectOnline(mode) {
+function connectOnline(mode, selectedCode = '') {
   const character = document.querySelector(`[data-player="${mode === 'create' ? '0' : '1'}"]`)?.value ?? 'cedric'
-  const code = document.querySelector('[data-room-code]')?.value.trim()
-  state.onlineError = ''
-  const socket = new WebSocket(onlineSocketUrl())
+  const code = selectedCode || document.querySelector('[data-room-code]')?.value.trim()
+  state.onlineError = 'Conectando ao servidor...'
+  render()
+  let socket
+  try {
+    const WebSocketClient = globalThis.WebSocket
+    if (!WebSocketClient) throw new Error('WebSocket não disponível neste Android')
+    socket = new WebSocketClient(onlineSocketUrl())
+  } catch (error) {
+    state.onlineError = `Não foi possível iniciar a conexão: ${error.message}`
+    render()
+    return
+  }
   state.socket = socket
-  socket.addEventListener('open', () => socket.send(JSON.stringify(mode === 'create' ? { type: 'create', character } : { type: 'join', code, character })))
+  socket.addEventListener('open', () => socket.send(JSON.stringify(mode === 'create' ? { type: 'create', character } : mode === 'join' ? { type: 'join', code, character } : { type: 'list-rooms' })))
   socket.addEventListener('message', (event) => handleOnlineMessage(JSON.parse(event.data)))
-  socket.addEventListener('error', () => { state.onlineError = 'Não foi possível conectar ao servidor.'; render() })
+  socket.addEventListener('error', () => { state.onlineError = 'Não foi possível conectar ao servidor. Verifique a internet e tente novamente.'; render() })
+  socket.addEventListener('close', () => { if (!state.roomCode || state.screen === 'home') { state.onlineError = 'Conexão encerrada. Tente novamente.'; render() } })
+  setTimeout(() => { if (socket.readyState === globalThis.WebSocket.CONNECTING) { socket.close(); state.onlineError = 'O servidor demorou para responder. Tente novamente.'; render() } }, 8000)
 }
 
 function handleOnlineMessage(message) {
+  if (message.type === 'public-rooms') { state.publicRooms = message.rooms; render(); return }
   if (message.type === 'error') { state.onlineError = message.message; state.socket?.close(); state.screen = 'home'; render(); return }
   if (message.type === 'room-created') { state.online = true; state.playerIndex = 0; state.roomCode = message.code; state.screen = 'lobby'; render(); return }
   if (message.type === 'room-ready') {

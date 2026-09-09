@@ -3,6 +3,7 @@ import { WebSocketServer } from 'ws'
 
 const port = Number(process.env.PORT || 8787)
 const rooms = new Map()
+const clients = new Set()
 
 function createRoomCode() {
   let code
@@ -12,7 +13,7 @@ function createRoomCode() {
 }
 
 function send(socket, message) {
-  if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message))
+  if (socket && socket.readyState === socket.OPEN) socket.send(JSON.stringify(message))
 }
 
 function broadcast(room, message) {
@@ -23,6 +24,16 @@ function roomState(room) {
   return room.players.map((player) => ({ index: player.index, character: player.character, ready: Boolean(player.socket) }))
 }
 
+function publicRooms() {
+  return [...rooms.values()]
+    .filter((room) => room.players.length < 2)
+    .map((room) => ({ code: room.code, hostCharacter: room.players[0]?.character ?? 'cedric', players: room.players.filter((player) => player.socket).length }))
+}
+
+function broadcastRooms() {
+  clients.forEach((client) => send(client, { type: 'public-rooms', rooms: publicRooms() }))
+}
+
 function getRoomPlayer(room, socket) {
   return room.players.find((player) => player.socket === socket) ?? null
 }
@@ -30,6 +41,8 @@ function getRoomPlayer(room, socket) {
 const server = new WebSocketServer({ port })
 
 server.on('connection', (socket) => {
+  clients.add(socket)
+  send(socket, { type: 'public-rooms', rooms: publicRooms() })
   socket.on('message', (raw) => {
     let message
     try { message = JSON.parse(raw.toString()) } catch { return send(socket, { type: 'error', message: 'Mensagem inválida.' }) }
@@ -38,7 +51,12 @@ server.on('connection', (socket) => {
       const room = { code: createRoomCode(), turn: 1, choices: new Map(), players: [] }
       const player = { socket, index: 0, character: message.character, room }
       room.players.push(player); rooms.set(room.code, room); socket.player = player
-      return send(socket, { type: 'room-created', code: room.code, index: 0, players: roomState(room) })
+      send(socket, { type: 'room-created', code: room.code, index: 0, players: roomState(room) })
+      return broadcastRooms()
+    }
+
+    if (message.type === 'list-rooms') {
+      return send(socket, { type: 'public-rooms', rooms: publicRooms() })
     }
 
     if (message.type === 'join') {
@@ -50,12 +68,14 @@ server.on('connection', (socket) => {
         openPlayer.character = message.character
         socket.player = openPlayer
         room.players.forEach((roomPlayer) => send(roomPlayer.socket, { type: 'room-ready', code: room.code, index: roomPlayer.index, players: roomState(room), turn: room.turn }))
+        broadcastRooms()
         return
       }
       if (room.players.length >= 2) return send(socket, { type: 'error', message: 'Sala não encontrada ou cheia.' })
       const player = { socket, index: room.players.length, character: message.character, room }
       room.players.push(player); socket.player = player
       room.players.forEach((roomPlayer) => send(roomPlayer.socket, { type: 'room-ready', code: room.code, index: roomPlayer.index, players: roomState(room), turn: room.turn }))
+      broadcastRooms()
       return
     }
 
@@ -75,6 +95,7 @@ server.on('connection', (socket) => {
   })
 
   socket.on('close', () => {
+    clients.delete(socket)
     const player = getRoomPlayer(socket.player?.room ?? { players: [] }, socket)
     if (!player) return
     const room = player.room
@@ -83,6 +104,8 @@ server.on('connection', (socket) => {
     if (activePlayers.length > 0) {
       broadcast(room, { type: 'opponent-left' })
     }
+    if (room.players.every((roomPlayer) => !roomPlayer.socket)) rooms.delete(room.code)
+    broadcastRooms()
   })
 })
 
