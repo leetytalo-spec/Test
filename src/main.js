@@ -43,22 +43,23 @@ function renderLobby() {
 }
 
 function renderHome() {
-  return `<section class="home-shell">
-    <div class="brand-mark"><span>LA</span><small>LEET ARENA</small></div>
-    <div class="home-copy">
-      <p class="eyebrow">PROTOCOLO DE COMBATE // 01</p>
-      <h1>Escolha.<br><em>Revele.</em><br>Sobreviva.</h1>
-      <p class="intro">Um duelo local por turnos simultâneos. As escolhas ficam ocultas até o momento do impacto.</p>
+  return `<section class="home-shell home-hero">
+    <div class="home-hero-content">
+      <div class="brand-mark"><span>LA</span><small>LEET ARENA</small></div>
+      <div class="home-copy">
+        <p class="eyebrow">ARENA // COMBATE POR TURNOS</p>
+        <h1>Entre na<br><em>arena.</em></h1>
+        <p class="intro">Escolha sua ação. O impacto acontece quando os dois jogadores revelam suas decisões.</p>
+      </div>
     </div>
-    <div class="setup-panel">
-      <div class="panel-label">CONFIGURAR DUELO</div>
+    <div class="setup-panel home-setup">
+      <div class="panel-label">NOVA PARTIDA</div>
       ${playerPicker(0, 'JOGADOR 1', 'cedric')}
       <div class="versus">VS</div>
       ${playerPicker(1, 'JOGADOR 2', 'voss')}
       <button class="primary-button" data-action="start">INICIAR PARTIDA <span>↗</span></button>
       <button class="music-button" data-action="music">♫ ${state.musicEnabled ? 'DESATIVAR MÚSICA RPG' : 'ATIVAR MÚSICA RPG'}</button>
-      <div class="online-box"><p class="panel-label">SALAS PÚBLICAS</p><button class="primary-button small" data-action="create-online">CRIAR SALA</button><button class="primary-button small" data-action="refresh-rooms">ATUALIZAR SALAS</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
-      <p class="local-note">PROTÓTIPO LOCAL · DOIS JOGADORES NO MESMO DISPOSITIVO</p>
+      <div class="online-box"><div class="online-heading"><p class="panel-label">JOGAR ONLINE</p><span>AO VIVO</span></div><button class="primary-button small" data-action="create-online">CRIAR SALA</button><button class="primary-button small" data-action="refresh-rooms">ATUALIZAR</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
     </div>
   </section>`
 }
