@@ -60,7 +60,7 @@ function renderHome() {
       <div class="versus">VS</div>
       ${playerPicker(1, 'JOGADOR 2', 'voss')}
       <button class="primary-button" data-action="start">INICIAR PARTIDA <span>↗</span></button>
-      <div class="online-box"><div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div><button class="primary-button small" data-action="create-online">ENCONTRAR PARTIDA</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
+      <div class="online-box"><div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div><button class="primary-button small" data-action="create-online">CRIAR SALA</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
     </div>
   </section>`
 }
@@ -250,7 +250,10 @@ function onlineSocketUrl() {
 function connectOnline(mode, selectedCode = '') {
   const character = document.querySelector(`[data-player="${mode === 'create' ? '0' : '1'}"]`)?.value ?? 'cedric'
   const code = selectedCode
-  state.socket?.close()
+  if (state.socket) {
+    state.socket.intentionalClose = true
+    state.socket.close()
+  }
   state.socket = null
   state.roomFeedConnecting = true
   state.roomFeedConnected = false
@@ -268,10 +271,10 @@ function connectOnline(mode, selectedCode = '') {
     return
   }
   state.socket = socket
-  socket.addEventListener('open', () => { if (mode === 'list') state.roomFeedConnected = true; socket.send(JSON.stringify(mode === 'create' ? { type: 'quick-join', character } : mode === 'join' ? { type: 'join', code, character } : { type: 'list-rooms' })) })
+  socket.addEventListener('open', () => { if (mode === 'list') state.roomFeedConnected = true; socket.send(JSON.stringify(mode === 'create' ? { type: 'create', character } : mode === 'join' ? { type: 'join', code, character } : { type: 'list-rooms' })) })
   socket.addEventListener('message', (event) => handleOnlineMessage(JSON.parse(event.data)))
   socket.addEventListener('error', () => { state.onlineError = 'Não foi possível conectar ao servidor. Verifique a internet e tente novamente.'; render() })
-  socket.addEventListener('close', () => { if (!state.roomCode || state.screen === 'home') { state.onlineError = 'Conexão encerrada. Tente novamente.'; render() } })
+  socket.addEventListener('close', () => { if (!socket.intentionalClose && (!state.roomCode || state.screen === 'home')) { state.onlineError = 'Conexão encerrada. Tente novamente.'; render() } })
   setTimeout(() => { if (socket.readyState === globalThis.WebSocket.CONNECTING) { socket.close(); state.onlineError = 'O servidor demorou para responder. Tente novamente.'; render() } }, 8000)
 }
 

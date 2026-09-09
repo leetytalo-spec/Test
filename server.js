@@ -51,6 +51,14 @@ server.on('connection', (socket) => {
       return send(socket, { type: 'public-rooms', rooms: publicRooms() })
     }
 
+    if (message.type === 'create') {
+      const room = { code: createRoomCode(), turn: 1, choices: new Map(), players: [] }
+      const player = { socket, index: 0, character: message.character, room }
+      room.players.push(player); rooms.set(room.code, room); socket.player = player
+      send(socket, { type: 'room-created', code: room.code, index: 0, players: roomState(room) })
+      return broadcastRooms()
+    }
+
     if (message.type === 'quick-join') {
       const openRoom = [...rooms.values()].find((room) => room.players.length < 2 && room.players.some((roomPlayer) => roomPlayer.socket))
       if (openRoom) {
