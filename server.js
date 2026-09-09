@@ -24,10 +24,22 @@ function roomState(room) {
   return room.players.map((player) => ({ index: player.index, character: player.character, ready: Boolean(player.socket) }))
 }
 
+function roomDisplayName(character) {
+  return character === 'voss' ? 'Maria' : 'João'
+}
+
 function publicRooms() {
   return [...rooms.values()]
     .filter((room) => room.players.length < 2)
-    .map((room) => ({ code: room.code, hostCharacter: room.players[0]?.character ?? 'cedric', players: room.players.filter((player) => player.socket).length }))
+    .map((room) => ({
+      code: room.code,
+      hostCharacter: room.players[0]?.character ?? 'cedric',
+      players: room.players.filter((player) => player.socket).length,
+      members: room.players.filter((player) => player.socket).map((player) => ({
+        character: player.character,
+        name: roomDisplayName(player.character),
+      })),
+    }))
 }
 
 function broadcastRooms() {

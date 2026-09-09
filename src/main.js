@@ -1,4 +1,5 @@
 import './style.css'
+import { checkForUpdate, installUpdate } from './updater.js'
 
 const characters = {
   cedric: {
@@ -26,8 +27,9 @@ const characters = {
 const state = {
   screen: 'home', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
   online: false, socket: null, roomFeedSocket: null, roomCode: '', createdRoomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
-  musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false,
+  homeMode: 'offline', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false,
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
+  updateAvailable: false, updateManifest: null, updateStatus: '', updateInstalling: false,
 }
 
 const app = document.querySelector('#app')
@@ -36,7 +38,7 @@ function render() {
   document.body.className = state.screen === 'battle' ? 'battle-view' : 'home-view'
   app.innerHTML = state.screen === 'home' ? renderHome() : state.screen === 'lobby' ? renderLobby() : renderBattle()
   bindEvents()
-  if (state.screen === 'home' && !state.roomFeedConnected && !state.roomFeedConnecting && !state.roomFeedSocket) connectOnline('list')
+  if (state.screen === 'home' && state.homeMode === 'online' && !state.roomFeedConnected && !state.roomFeedConnecting && !state.roomFeedSocket) connectOnline('list')
 }
 
 function renderLobby() {
@@ -44,6 +46,7 @@ function renderLobby() {
 }
 
 function renderHome() {
+  const isOnlineMode = state.homeMode === 'online'
   return `<section class="home-shell home-hero">
     <div class="home-hero-content">
       <div class="brand-mark"><span>LA</span><small>LEET ARENA</small></div>
@@ -54,30 +57,68 @@ function renderHome() {
       </div>
     </div>
     <div class="setup-panel home-setup">
-      <div class="panel-label">NOVA PARTIDA</div>
-      ${playerPicker(0, 'JOGADOR 1', 'cedric')}
-      <div class="versus">VS</div>
-      ${playerPicker(1, 'JOGADOR 2', 'voss')}
-      <button class="primary-button" data-action="start">INICIAR PARTIDA <span>↗</span></button>
-      <div class="online-box">
-        <div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div>
-        ${renderCreatedRoomBanner()}
-        ${!state.createdRoomCode ? '<button class="primary-button small" data-action="create-online">CRIAR SALA</button>' : ''}
-        <div class="public-rooms">${renderPublicRooms()}</div>
-        <p class="online-error">${state.onlineError}</p>
+      ${renderUpdateBanner()}
+      <div class="mode-selector">
+        <button class="primary-button ${isOnlineMode ? 'active' : ''}" data-action="show-online-mode">DUELO ONLINE</button>
+        <button class="primary-button secondary ${!isOnlineMode ? 'active' : ''}" data-action="show-offline-mode">DUELO OFFLINE</button>
       </div>
+      ${isOnlineMode ? renderOnlinePanel() : renderOfflinePanel()}
     </div>
   </section>`
 }
 
+function renderOfflinePanel() {
+  return `
+    <div class="panel-label">NOVA PARTIDA</div>
+    ${playerPicker(0, 'JOGADOR 1', 'cedric')}
+    <div class="versus">VS</div>
+    ${playerPicker(1, 'JOGADOR 2', 'voss')}
+    <button class="primary-button" data-action="start">DUELO OFFLINE <span>↗</span></button>
+  `
+}
+
+function renderOnlinePanel() {
+  return `
+    <div class="online-box">
+      <div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div>
+      ${renderCreatedRoomBanner()}
+      ${!state.createdRoomCode ? '<button class="primary-button small" data-action="create-online">CRIAR SALA</button>' : ''}
+      <div class="public-rooms">${renderPublicRooms()}</div>
+      <p class="online-error">${state.onlineError}</p>
+    </div>
+  `
+}
+
+function renderUpdateBanner() {
+  if (!state.updateAvailable) return ''
+  return `<div class="update-banner">
+    <div>
+      <strong>NOVA ATUALIZAÇÃO DISPONÍVEL</strong>
+      <small>${state.updateStatus || `Versão ${state.updateManifest?.versionName ?? ''} pronta para instalar.`}</small>
+    </div>
+    <button class="primary-button small" data-action="install-update" ${state.updateInstalling ? 'disabled' : ''}>${state.updateInstalling ? 'ATUALIZANDO...' : 'ATUALIZAR AGORA'}</button>
+  </div>`
+}
+
+function roomMemberName(characterId) {
+  return characterId === 'voss' ? 'Maria' : 'João'
+}
+
+function formatRoomSummary(room) {
+  const members = room.members?.length ? room.members.map((member) => member.name || roomMemberName(member.character)) : [{ name: roomMemberName(room.hostCharacter) }]
+  if (members.length >= 2) return `${members[0].name} — ${members[1].name} ${members.length}/2`
+  return `${members[0].name} — ${members.length}/2`
+}
+
 function renderCreatedRoomBanner() {
   if (!state.createdRoomCode || !state.online) return ''
+  const hostCharacter = document.querySelector('[data-player="0"]')?.value ?? 'cedric'
+  const summary = `${roomMemberName(hostCharacter)} — 1/2`
   return `<div class="created-room-banner">
     <div class="created-room-details">
       <span class="pulse-dot">●</span>
       <div>
-        <strong>SALA ABERTA: ${state.createdRoomCode}</strong>
-        <small>Aguardando oponente entrar...</small>
+        <strong>${summary}</strong>
       </div>
     </div>
     <button class="close-room-btn" data-action="close-created-room" title="Fechar sala">✕</button>
@@ -86,7 +127,7 @@ function renderCreatedRoomBanner() {
 
 function renderPublicRooms() {
   if (!state.publicRooms.length) return '<p class="muted">Nenhuma sala aberta. Crie uma sala para aparecer aqui.</p>'
-  return state.publicRooms.map((room) => `<button class="room-entry" data-room-code-entry="${room.code}"><strong>${room.hostCharacter.toUpperCase()}</strong><small>${room.players}/2 jogadores</small><span>ENTRAR</span></button>`).join('')
+  return state.publicRooms.map((room) => `<button class="room-entry" data-room-code-entry="${room.code}"><strong>${formatRoomSummary(room)}</strong><span>ENTRAR</span></button>`).join('')
 }
 
 function playerPicker(index, label, fallback) {
@@ -174,6 +215,8 @@ function resultPanel() {
 function bindEvents() {
   document.querySelectorAll('[data-player]').forEach((select) => select.addEventListener('change', (event) => { select.dataset.value = event.target.value }))
   document.querySelector('[data-action="start"]')?.addEventListener('click', () => { startMusic(); startGame(); })
+  document.querySelector('[data-action="show-online-mode"]')?.addEventListener('click', () => { state.homeMode = 'online'; render(); })
+  document.querySelector('[data-action="show-offline-mode"]')?.addEventListener('click', () => { state.homeMode = 'offline'; render(); })
   document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => { startMusic(); connectOnline('create'); })
   document.querySelectorAll('[data-room-code-entry]').forEach((button) => button.addEventListener('click', () => { startMusic(); connectOnline('join', button.dataset.roomCodeEntry); }))
   document.querySelector('[data-action="cancel-online"]')?.addEventListener('click', () => { state.socket?.close(); state.screen = 'home'; state.online = false; state.createdRoomCode = ''; render() })
@@ -194,6 +237,21 @@ function bindEvents() {
     const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
     chooseAbility(phase, button.dataset.ability)
   }))
+  document.querySelector('[data-action="install-update"]')?.addEventListener('click', applyUpdate)
+}
+
+async function applyUpdate() {
+  if (!state.updateManifest || state.updateInstalling) return
+  state.updateInstalling = true
+  state.updateStatus = ''
+  render()
+  try {
+    await installUpdate(state.updateManifest, (status) => { state.updateStatus = status; render() })
+  } catch (error) {
+    state.updateStatus = error.message || 'Não foi possível instalar a atualização.'
+    state.updateInstalling = false
+    render()
+  }
 }
 
 function chooseAbility(phase, abilityId) {
@@ -450,3 +508,11 @@ function consume(player, ability) { if (ability.uses !== undefined) player.uses[
 function dealDamage(target, damage, events, message) { target.hp = Math.max(0, target.hp - damage); events.push(message) }
 
 render()
+
+checkForUpdate().then((result) => {
+  if (result.available) {
+    state.updateAvailable = true
+    state.updateManifest = result.manifest
+    if (state.screen === 'home') render()
+  }
+})

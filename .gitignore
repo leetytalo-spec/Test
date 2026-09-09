@@ -47,6 +47,15 @@ web_modules/
 # TypeScript cache
 *.tsbuildinfo
 
+# Android release signing (never commit)
+android/keystore/
+android/keystore.properties
+*.jks
+*.keystore
+
+# Update server releases (binaries, not versioned)
+update-server/releases/
+
 # Optional npm cache directory
 .npm
 
