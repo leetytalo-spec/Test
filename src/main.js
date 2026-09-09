@@ -26,6 +26,7 @@ const characters = {
 const state = {
   screen: 'home', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
   online: false, socket: null, roomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
+  musicEnabled: false, musicContext: null, musicTimer: null, musicStep: 0, musicPattern: null,
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
 }
 
@@ -55,6 +56,7 @@ function renderHome() {
       <div class="versus">VS</div>
       ${playerPicker(1, 'JOGADOR 2', 'voss')}
       <button class="primary-button" data-action="start">INICIAR PARTIDA <span>↗</span></button>
+      <button class="music-button" data-action="music">♫ ${state.musicEnabled ? 'DESATIVAR MÚSICA RPG' : 'ATIVAR MÚSICA RPG'}</button>
       <div class="online-box"><p class="panel-label">SALAS PÚBLICAS</p><button class="primary-button small" data-action="create-online">CRIAR SALA</button><button class="primary-button small" data-action="refresh-rooms">ATUALIZAR SALAS</button><div class="public-rooms">${renderPublicRooms()}</div><p class="online-error">${state.onlineError}</p></div>
       <p class="local-note">PROTÓTIPO LOCAL · DOIS JOGADORES NO MESMO DISPOSITIVO</p>
     </div>
@@ -135,6 +137,7 @@ function resultPanel() {
 function bindEvents() {
   document.querySelectorAll('[data-player]').forEach((select) => select.addEventListener('change', (event) => { select.dataset.value = event.target.value }))
   document.querySelector('[data-action="start"]')?.addEventListener('click', startGame)
+  document.querySelector('[data-action="music"]')?.addEventListener('click', toggleMusic)
   document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => connectOnline('create'))
   document.querySelector('[data-action="refresh-rooms"]')?.addEventListener('click', () => connectOnline('list'))
   document.querySelectorAll('[data-room-code-entry]').forEach((button) => button.addEventListener('click', () => connectOnline('join', button.dataset.roomCodeEntry)))
@@ -174,7 +177,51 @@ function startGame() {
   const ids = [...document.querySelectorAll('[data-player]')].map((select) => select.value)
   state.players = ids.map((id) => createPlayer(characters[id]))
   state.screen = 'battle'; state.turn = 1; state.phase = 'p1'; state.selections = {}; state.log = []; state.result = ''; state.animation = null; state.online = false; state.onlineWaiting = false; state.opponentChosen = false
+  startMusic()
   render()
+}
+
+function toggleMusic() {
+  if (state.musicEnabled) stopMusic()
+  else startMusic()
+  render()
+}
+
+function startMusic() {
+  if (state.musicEnabled) return
+  const AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext
+  if (!AudioContextClass) return
+  state.musicContext = state.musicContext ?? new AudioContextClass()
+  state.musicContext.resume()
+  state.musicPattern = [0, 3, 7, 10, 7, 3, 2, 5].map((note) => note + Math.floor(Math.random() * 2) * 12)
+  state.musicStep = 0
+  state.musicEnabled = true
+  playMusicStep()
+}
+
+function playMusicStep() {
+  if (!state.musicEnabled || !state.musicContext) return
+  const context = state.musicContext
+  const root = 146.83
+  const frequency = root * Math.pow(2, state.musicPattern[state.musicStep] / 12)
+  const oscillator = context.createOscillator()
+  const gain = context.createGain()
+  oscillator.type = 'triangle'
+  oscillator.frequency.value = frequency
+  gain.gain.setValueAtTime(0.0001, context.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.045, context.currentTime + 0.03)
+  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.42)
+  oscillator.connect(gain).connect(context.destination)
+  oscillator.start()
+  oscillator.stop(context.currentTime + 0.45)
+  state.musicStep = (state.musicStep + 1) % state.musicPattern.length
+  state.musicTimer = setTimeout(playMusicStep, 470)
+}
+
+function stopMusic() {
+  state.musicEnabled = false
+  clearTimeout(state.musicTimer)
+  state.musicTimer = null
 }
 
 function createPlayer(character) {
