@@ -25,7 +25,7 @@ const characters = {
 
 const state = {
   screen: 'home', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
-  online: false, socket: null, roomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
+  online: false, socket: null, roomFeedSocket: null, roomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
   musicEnabled: false, musicContext: null, musicTimer: null, musicStep: 0, musicPattern: null,
   roomFeedConnecting: false, roomFeedConnected: false,
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
@@ -37,7 +37,7 @@ function render() {
   document.body.className = state.screen === 'battle' ? 'battle-view' : 'home-view'
   app.innerHTML = state.screen === 'home' ? renderHome() : state.screen === 'lobby' ? renderLobby() : renderBattle()
   bindEvents()
-  if (state.screen === 'home' && !state.roomFeedConnected && !state.roomFeedConnecting && !state.socket) connectOnline('list')
+  if (state.screen === 'home' && !state.roomFeedConnected && !state.roomFeedConnecting && !state.roomFeedSocket) connectOnline('list')
 }
 
 function renderLobby() {
@@ -250,11 +250,11 @@ function onlineSocketUrl() {
 function connectOnline(mode, selectedCode = '') {
   const character = document.querySelector(`[data-player="${mode === 'create' ? '0' : '1'}"]`)?.value ?? 'cedric'
   const code = selectedCode
-  if (state.socket) {
+  if (mode !== 'list' && state.socket) {
     state.socket.intentionalClose = true
     state.socket.close()
   }
-  state.socket = null
+  if (mode !== 'list') state.socket = null
   state.roomFeedConnecting = true
   state.roomFeedConnected = false
   state.onlineError = 'Conectando ao servidor...'
@@ -270,11 +270,12 @@ function connectOnline(mode, selectedCode = '') {
     render()
     return
   }
-  state.socket = socket
+  if (mode === 'list') state.roomFeedSocket = socket
+  else state.socket = socket
   socket.addEventListener('open', () => { if (mode === 'list') state.roomFeedConnected = true; socket.send(JSON.stringify(mode === 'create' ? { type: 'create', character } : mode === 'join' ? { type: 'join', code, character } : { type: 'list-rooms' })) })
   socket.addEventListener('message', (event) => handleOnlineMessage(JSON.parse(event.data)))
-  socket.addEventListener('error', () => { state.onlineError = 'Não foi possível conectar ao servidor. Verifique a internet e tente novamente.'; render() })
-  socket.addEventListener('close', () => { if (!socket.intentionalClose && (!state.roomCode || state.screen === 'home')) { state.onlineError = 'Conexão encerrada. Tente novamente.'; render() } })
+  socket.addEventListener('error', () => { if (mode === 'list') state.roomFeedConnected = false; state.onlineError = 'Não foi possível conectar ao servidor. Verifique a internet e tente novamente.'; render() })
+  socket.addEventListener('close', () => { if (mode === 'list') { state.roomFeedSocket = null; state.roomFeedConnected = false } if (!socket.intentionalClose && mode !== 'list' && (!state.roomCode || state.screen === 'home')) { state.onlineError = 'Conexão encerrada. Tente novamente.'; render() } })
   setTimeout(() => { if (socket.readyState === globalThis.WebSocket.CONNECTING) { socket.close(); state.onlineError = 'O servidor demorou para responder. Tente novamente.'; render() } }, 8000)
 }
 
