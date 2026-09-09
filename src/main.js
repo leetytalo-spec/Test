@@ -1,5 +1,5 @@
 import './style.css'
-import { checkForUpdate, installUpdate } from './updater.js'
+import { checkForUpdate, installUpdate, getInstalledVersion } from './updater.js'
 
 const characters = {
   cedric: {
@@ -29,7 +29,7 @@ const state = {
   online: false, socket: null, roomFeedSocket: null, roomCode: '', createdRoomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
   homeMode: 'offline', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false,
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
-  updateAvailable: false, updateManifest: null, updateStatus: '', updateInstalling: false,
+  updateAvailable: false, updateManifest: null, updateStatus: '', updateInstalling: false, appVersionName: '',
 }
 
 const app = document.querySelector('#app')
@@ -42,7 +42,7 @@ function render() {
 }
 
 function renderLobby() {
-  return `<section class="home-shell lobby-shell"><div class="brand-mark"><span>LA</span><small>LEET ARENA</small></div><div class="home-copy"><p class="eyebrow">SALA ONLINE</p><h1>AGUARDANDO</h1><p class="intro">Você está na fila. A partida começa automaticamente quando outro jogador entrar.</p></div><div class="setup-panel"><div class="panel-label">SALA ABERTA</div><p class="online-wait">● CONEXÃO ATIVA<br><small>Aguardando o segundo jogador.</small></p><button class="primary-button" data-action="cancel-online">SAIR DA SALA <span>↗</span></button></div></section>`
+  return `<section class="home-shell lobby-shell"><div class="brand-mark"><span>LA</span><small>LEET ARENA</small></div><div class="home-copy"><p class="eyebrow">SALA ONLINE</p><h1>AGUARDANDO</h1><p class="intro">Você está na fila. A partida começa automaticamente quando outro jogador entrar.</p></div><div class="setup-panel"><p class="online-wait">● CONEXÃO ATIVA<br><small>Aguardando o segundo jogador.</small></p><button class="primary-button" data-action="cancel-online">SAIR DA SALA <span>↗</span></button></div></section>`
 }
 
 function renderHome() {
@@ -56,6 +56,7 @@ function renderHome() {
         <p class="intro">Escolha sua ação. O impacto acontece quando os dois jogadores revelam suas decisões.</p>
       </div>
     </div>
+    <span class="version-tag">${state.appVersionName ? `v${state.appVersionName}` : ''}</span>
     <div class="setup-panel home-setup">
       ${renderUpdateBanner()}
       <div class="mode-selector">
@@ -80,9 +81,10 @@ function renderOfflinePanel() {
 function renderOnlinePanel() {
   return `
     <div class="online-box">
-      <div class="online-heading"><p class="panel-label">SALAS ABERTAS</p><span>AO VIVO</span></div>
+      <div class="online-header-row">
+        ${!state.createdRoomCode ? '<button class="primary-button small compact-create" data-action="create-online">CRIAR SALA</button>' : ''}
+      </div>
       ${renderCreatedRoomBanner()}
-      ${!state.createdRoomCode ? '<button class="primary-button small" data-action="create-online">CRIAR SALA</button>' : ''}
       <div class="public-rooms">${renderPublicRooms()}</div>
       <p class="online-error">${state.onlineError}</p>
     </div>
@@ -212,17 +214,43 @@ function resultPanel() {
   return `<div class="result-panel"><p class="eyebrow">RESULTADO DO DUELO</p><h2>${state.result}</h2><button class="primary-button" data-action="restart">NOVA PARTIDA <span>↗</span></button></div>`
 }
 
+function clearOnlineSession() {
+  if (state.socket) {
+    state.socket.intentionalClose = true
+    state.socket.close()
+    state.socket = null
+  }
+  if (state.roomFeedSocket) {
+    state.roomFeedSocket.close()
+    state.roomFeedSocket = null
+  }
+  state.online = false
+  state.roomCode = ''
+  state.createdRoomCode = ''
+  state.onlineWaiting = false
+  state.onlineError = ''
+  state.roomFeedConnecting = false
+  state.roomFeedConnected = false
+}
+
 function bindEvents() {
   document.querySelectorAll('[data-player]').forEach((select) => select.addEventListener('change', (event) => { select.dataset.value = event.target.value }))
-  document.querySelector('[data-action="start"]')?.addEventListener('click', () => { startMusic(); startGame(); })
-  document.querySelector('[data-action="show-online-mode"]')?.addEventListener('click', () => { state.homeMode = 'online'; render(); })
-  document.querySelector('[data-action="show-offline-mode"]')?.addEventListener('click', () => { state.homeMode = 'offline'; render(); })
+  document.querySelector('[data-action="start"]')?.addEventListener('click', () => { clearOnlineSession(); startMusic(); startGame(); })
+  document.querySelector('[data-action="show-online-mode"]')?.addEventListener('click', () => { state.homeMode = 'online'; clearOnlineSession(); render(); })
+  document.querySelector('[data-action="show-offline-mode"]')?.addEventListener('click', () => { state.homeMode = 'offline'; clearOnlineSession(); render(); })
   document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => { startMusic(); connectOnline('create'); })
   document.querySelectorAll('[data-room-code-entry]').forEach((button) => button.addEventListener('click', () => { startMusic(); connectOnline('join', button.dataset.roomCodeEntry); }))
-  document.querySelector('[data-action="cancel-online"]')?.addEventListener('click', () => { state.socket?.close(); state.screen = 'home'; state.online = false; state.createdRoomCode = ''; render() })
+  document.querySelector('[data-action="cancel-online"]')?.addEventListener('click', () => {
+    clearOnlineSession()
+    state.screen = 'home'
+    state.homeMode = 'online'
+    render()
+  })
   document.querySelector('[data-action="close-created-room"]')?.addEventListener('click', () => {
-    if (state.socket) { state.socket.intentionalClose = true; state.socket.close(); state.socket = null; }
-    state.online = false; state.createdRoomCode = ''; state.roomCode = ''; state.onlineError = ''; render()
+    clearOnlineSession()
+    state.screen = 'home'
+    state.homeMode = 'online'
+    render()
   })
   document.querySelector('[data-action="restart"]')?.addEventListener('click', () => { state.screen = 'home'; render() })
   document.querySelector('[data-action="next-player"]')?.addEventListener('click', confirmSelection)
@@ -230,8 +258,11 @@ function bindEvents() {
   document.querySelector('[data-action="prompt-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = true; render(); })
   document.querySelector('[data-action="cancel-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = false; render(); })
   document.querySelector('[data-action="confirm-surrender"]')?.addEventListener('click', () => {
-    if (state.socket) { state.socket.intentionalClose = true; state.socket.close(); state.socket = null; }
-    state.online = false; state.roomCode = ''; state.createdRoomCode = ''; state.showSurrenderModal = false; state.screen = 'home'; render();
+    clearOnlineSession()
+    state.showSurrenderModal = false
+    state.screen = 'home'
+    state.homeMode = 'online'
+    render()
   })
   document.querySelectorAll('[data-ability]').forEach((button) => button.addEventListener('click', () => {
     const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
@@ -513,6 +544,13 @@ checkForUpdate().then((result) => {
   if (result.available) {
     state.updateAvailable = true
     state.updateManifest = result.manifest
+    if (state.screen === 'home') render()
+  }
+})
+
+getInstalledVersion().then((info) => {
+  if (info?.versionName) {
+    state.appVersionName = info.versionName
     if (state.screen === 'home') render()
   }
 })

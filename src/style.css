@@ -15,9 +15,9 @@ button { cursor: pointer; }
 .eyebrow { color: #ff8060; margin: 0 0 15px; }
 .home-copy h1 { font-size: clamp(64px, 8vw, 118px); line-height: .82; text-transform: uppercase; letter-spacing: -.025em; margin: 0; font-weight: 700; }
 .home-copy h1 em { color: #ff6b45; font-style: normal; }
-.intro { max-width: 330px; margin-top: 30px; color: #9da9a5; font-size: 18px; line-height: 1.25; }
-.setup-panel { border-top: 1px solid #4a5350; padding-top: 18px; }
-.panel-label { color: #8d9b95; margin-bottom: 25px; }
+.intro { max-width: 330px; margin-top: 24px; color: #9da9a5; font-size: 17px; line-height: 1.22; }
+.setup-panel { border-top: 1px solid #4a5350; padding-top: 14px; }
+.panel-label { color: #8d9b95; margin-bottom: 18px; }
 .picker { display: block; border-bottom: 1px solid #3d4744; padding: 10px 0 12px; }
 .picker span { display: block; color: #89958f; font: 11px 'DM Mono', monospace; margin-bottom: 5px; }
 .picker select { border: 0; width: 100%; color: #f7f3eb; background: transparent; font-size: 23px; font-weight: 600; outline: none; }
@@ -35,13 +35,14 @@ button { cursor: pointer; }
 .primary-button span { float: right; font-size: 20px; line-height: 13px; }
 .primary-button.small { padding: 12px 16px; min-width: 145px; margin-top: 0; }
 .local-note { color: #64706c; margin-top: 22px; font-size: 9px; }
-.online-box { margin-top: 24px; padding-top: 18px; border-top: 1px solid #3d4744; }.online-box .panel-label { margin-bottom: 12px; }.online-box .primary-button { display: inline-block; min-width: 0; margin: 0 6px 8px 0; padding: 11px 13px; font-size: 12px; }.online-box input { width: 145px; padding: 10px 8px; border: 1px solid #4a5752; background: #151b1b; color: #f7f3eb; outline: none; }.online-error { min-height: 15px; margin: 5px 0 0; color: #ff8060; font: 10px 'DM Mono', monospace; }.online-wait { color: #79d6c2; font: 14px 'DM Mono', monospace; line-height: 1.8; }.online-wait small { color: #89958f; font: 14px 'Barlow Condensed', sans-serif; }
-.home-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(310px, 390px); gap: 8vw; min-height: 100svh; padding: 8vh 8vw; overflow: hidden; background: #101518 url('/assets/arena/arena-background.png') center / cover no-repeat; }.home-hero::before { content: ''; position: absolute; inset: 0; background: rgba(5, 10, 12, .68); }.home-hero-content, .home-setup { position: relative; z-index: 1; }.home-hero-content { display: flex; flex-direction: column; justify-content: space-between; }.home-hero .brand-mark { align-self: flex-start; }.home-copy { align-self: center; max-width: 520px; }.home-copy h1 { font-size: clamp(64px, 9vw, 132px); line-height: .78; }.home-copy .intro { max-width: 360px; margin-top: 24px; }.home-setup { align-self: center; padding: 24px; border: 1px solid rgba(215, 173, 46, .65); background: rgba(11, 17, 19, .84); box-shadow: 0 18px 50px rgba(0,0,0,.35); }.online-heading { display: flex; align-items: center; justify-content: space-between; }.online-heading .panel-label { margin-bottom: 12px; }.online-heading span { color: #79d6c2; font: 9px 'DM Mono', monospace; }.home-setup .primary-button { width: 100%; }.home-setup .music-button { width: 100%; }.home-setup .online-box { margin-top: 20px; }.home-setup .online-box .primary-button { width: auto; }
-.public-rooms { display: grid; gap: 6px; max-height: 160px; overflow-y: auto; margin: 6px 0 0; padding-right: 4px; }
-.room-entry { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 9px 10px; border: 1px solid rgba(120, 140, 132, 0.4); background: rgba(20, 27, 27, 0.88); color: #f7f3eb; text-align: left; border-radius: 8px; }
-.room-entry strong { font-size: 13px; line-height: 1.2; color: #ebefe9; }
-.room-entry span { color: #ff8060; font: 700 10px 'DM Mono', monospace; letter-spacing: .08em; }
-.room-entry:hover { border-color: #ff8060; background: rgba(31, 23, 20, 0.9); }
+.online-box { margin-top: 24px; padding-top: 18px; border-top: 1px solid #3d4744; }.online-box .panel-label { margin-bottom: 10px; }.online-box .primary-button { display: inline-block; min-width: 0; margin: 0 0 10px; padding: 10px 12px; font-size: 11px; }.online-box input { width: 145px; padding: 10px 8px; border: 1px solid #4a5752; background: #151b1b; color: #f7f3eb; outline: none; }.online-error { min-height: 15px; margin: 5px 0 0; color: #ff8060; font: 10px 'DM Mono', monospace; }.online-wait { color: #79d6c2; font: 14px 'DM Mono', monospace; line-height: 1.8; }.online-wait small { color: #89958f; font: 14px 'Barlow Condensed', sans-serif; }
+.home-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(310px, 390px); gap: 8vw; min-height: 100svh; padding: 8vh 8vw; overflow: hidden; background: #101518 url('/assets/arena/arena-background.png') center / cover no-repeat; }.home-hero::before { content: ''; position: absolute; inset: 0; background: rgba(5, 10, 12, .68); }.home-hero-content, .home-setup { position: relative; z-index: 1; }.home-hero-content { display: flex; flex-direction: column; justify-content: space-between; }.home-hero .brand-mark { align-self: flex-start; }.home-copy { align-self: center; max-width: 520px; }.home-copy h1 { font-size: clamp(64px, 9vw, 132px); line-height: .78; }.home-copy .intro { max-width: 360px; margin-top: 24px; }.home-setup { align-self: center; padding: 24px; border: 1px solid rgba(215, 173, 46, .65); background: rgba(11, 17, 19, .84); box-shadow: 0 18px 50px rgba(0,0,0,.35); }.online-header-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }.online-heading { display: flex; align-items: center; justify-content: space-between; gap: 6px; }.online-heading .panel-label { margin-bottom: 12px; }.online-heading span { color: #79d6c2; font: 9px 'DM Mono', monospace; }.compact-create { margin: 0; min-width: 0; width: auto; padding: 8px 10px; font-size: 10px; letter-spacing: .05em; }.home-setup .primary-button { width: 100%; }.home-setup .music-button { width: 100%; }.home-setup .online-box { margin-top: 20px; }.home-setup .online-box .primary-button { width: auto; }
+.public-rooms { display: grid; gap: 4px; max-height: 155px; overflow-y: auto; margin: 0; padding-right: 2px; }
+.room-entry { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 8px 10px; border: 0; border-bottom: 1px solid rgba(118, 135, 130, 0.3); background: transparent; color: #f7f3eb; text-align: left; }
+.room-entry:last-child { border-bottom: 0; }
+.room-entry strong { font-size: 12px; line-height: 1.2; color: #edf0ed; letter-spacing: .02em; }
+.room-entry span { color: #ff8060; font: 700 9px 'DM Mono', monospace; letter-spacing: .08em; }
+.room-entry:hover { background: rgba(255, 255, 255, 0.02); }
 .battle-shell { padding-top: 80px; }
 .topbar { position: absolute; top: 25px; left: 0; right: 0; height: 38px; display: flex; align-items: center; justify-content: center; }
 .turn-count { color: #77847f; }.turn-count strong { color: #f7f3eb; margin-left: 6px; }.status-dot { position: absolute; right: 5vw; color: #79d6c2; font-size: 10px; }
@@ -78,42 +79,42 @@ html, body { overflow: hidden; }
 .home-view { overflow-y: auto; }
 .home-view .home-shell { min-height: 100svh; }
 .battle-shell { height: 100svh; min-height: 0; overflow: hidden; padding: 0 10px 8px; }
-.battle-topbar { min-height: 76px; height: 76px; padding-top: 8px; border-bottom-width: 2px; gap: 8px; }
-.top-player strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; }.top-player span { margin-top: 4px; font-size: 12px; }.top-hp { height: 6px; margin-top: 5px; }.turn-count { font-size: 14px; }
-.last-action { margin: 34px 0 7px; min-height: 48px; border-width: 2px; }.speaker-icon { top: -35px; width: 34px; height: 34px; font-size: 14px; }.last-action-title { width: 150px; margin: -18px auto 4px; padding: 3px; border-width: 1px; font-size: 11px; }.last-action-copy { padding: 0 8px 6px; font-size: 10px; grid-template-columns: 1fr 26px 1fr; }.crossed-swords { font-size: 16px; }
-.arena-scene { min-height: 0; height: 28svh; margin-top: 5px; border-width: 2px; background-size: cover; }
-.action-panel { margin-top: 7px; }.action-buttons { gap: 6px; }.action-buttons .ability { min-height: 52px; border-width: 2px; border-radius: 0 10px 0 10px; }.action-buttons .ability strong { font-size: 15px; }.action-buttons .ability-symbol { font-size: 16px; }.extra-abilities { gap: 4px; margin-top: 4px; max-height: 42px; overflow: hidden; }.extra-abilities .ability { min-height: 25px; padding: 3px 7px; border-width: 1px; }.extra-abilities .ability strong { font-size: 10px; }.action-footer { margin-top: 4px; min-height: 0; }.action-footer .confirmed, .action-footer .muted { display: none; }.primary-button.small { min-width: 0; margin: 0; padding: 6px 10px; font-size: 10px; }.skip-button { min-height: 42px; margin-top: 5px; border-width: 2px; border-radius: 0 10px 0 10px; font-size: 14px; }
-.result-panel { margin-top: 10px; padding: 12px; }.result-panel h2 { font-size: 22px; }
+.battle-topbar { min-height: 70px; height: 70px; padding-top: 8px; border-bottom-width: 2px; gap: 8px; }
+.top-player strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }.top-player span { margin-top: 4px; font-size: 11px; }.top-hp { height: 6px; margin-top: 5px; }.turn-count { font-size: 13px; }
+.last-action { margin: 26px 0 7px; min-height: 42px; border-width: 2px; }.speaker-icon { top: -30px; width: 30px; height: 30px; font-size: 12px; }.last-action-title { width: 140px; margin: -15px auto 4px; padding: 3px; border-width: 1px; font-size: 10px; }.last-action-copy { padding: 0 8px 6px; font-size: 9px; grid-template-columns: 1fr 18px 1fr; }.crossed-swords { font-size: 14px; }
+.arena-scene { min-height: 0; height: 27svh; margin-top: 5px; border-width: 2px; background-size: cover; }
+.action-panel { margin-top: 7px; }.action-buttons { gap: 6px; }.action-buttons .ability { min-height: 46px; border-width: 2px; border-radius: 0 8px 0 8px; padding: 8px 10px; }.action-buttons .ability strong { font-size: 12px; letter-spacing: 0.02em; }.action-buttons .ability-symbol { font-size: 12px; }.extra-abilities { gap: 4px; margin-top: 4px; max-height: 42px; overflow: hidden; }.extra-abilities .ability { min-height: 22px; padding: 3px 6px; border-width: 1px; }.extra-abilities .ability strong { font-size: 8px; }.action-footer { margin-top: 4px; min-height: 0; }.action-footer .confirmed, .action-footer .muted { display: none; }.primary-button.small { min-width: 0; margin: 0; padding: 6px 10px; font-size: 10px; }.skip-button { min-height: 34px; margin-top: 5px; border-width: 2px; border-radius: 0 8px 0 8px; font-size: 11px; letter-spacing: 0.04em; }
+.result-panel { margin-top: 10px; padding: 12px; }.result-panel h2 { font-size: 20px; }
 @media (max-width: 760px) {
-	.home-hero { display: block; min-height: 100svh; height: auto; padding: 24px 20px 28px; overflow-y: auto; }
-	.home-hero-content { min-height: 270px; }.home-copy { align-self: auto; margin-top: 38px; }.home-copy h1 { font-size: 66px; }.home-copy .intro { margin-top: 16px; font-size: 15px; }
-	.home-setup { margin-top: 24px; padding: 18px; }.home-setup .picker select { font-size: 19px; }.home-setup .versus { padding: 7px 0; }.home-setup .online-box { margin-top: 16px; }
+	.home-hero { display: block; min-height: 100svh; height: auto; padding: 20px 18px 22px; overflow-y: auto; }
+	.home-hero-content { min-height: 210px; }.home-copy { align-self: auto; margin-top: 28px; }.home-copy h1 { font-size: 58px; }.home-copy .intro { margin-top: 12px; font-size: 14px; }
+	.home-setup { margin-top: 16px; padding: 16px; }.home-setup .picker select { font-size: 18px; }.home-setup .versus { padding: 6px 0; }.home-setup .online-box { margin-top: 14px; }
 }
 @media (max-width: 580px) {
 	.home-view { overflow-y: auto; }
-	.home-view .home-shell { min-height: 100svh; height: auto; display: block; padding: 24px 20px 32px; }
-	.home-view .brand-mark { margin-bottom: 36px; }
-	.home-view .home-copy h1 { font-size: 54px; }
-	.home-view .intro { margin: 18px 0 28px; font-size: 16px; }
-	.home-view .setup-panel { padding-top: 14px; }
-	.home-view .picker { padding: 7px 0 9px; }
-	.home-view .picker select { font-size: 20px; }
-	.home-view .versus { padding: 8px 0; }
-	.home-view .primary-button { margin-top: 18px; }
-	.home-view .online-box { margin-top: 18px; }
+	.home-view .home-shell { min-height: 100svh; height: auto; display: block; padding: 16px 18px 20px; }
+	.home-view .brand-mark { margin-bottom: 26px; }
+	.home-view .home-copy h1 { font-size: 46px; }
+	.home-view .intro { margin: 12px 0 20px; font-size: 14px; }
+	.home-view .setup-panel { padding-top: 10px; }
+	.home-view .picker { padding: 6px 0 8px; }
+	.home-view .picker select { font-size: 18px; }
+	.home-view .versus { padding: 6px 0; font-size: 10px; }
+	.home-view .primary-button { margin-top: 12px; }
+	.home-view .online-box { margin-top: 12px; }
 	.home-view .online-box input { width: 100%; margin: 3px 0 7px; }
 	.home-view .online-box .primary-button { width: 100%; margin: 3px 0; }
-	.home-view .local-note { margin-top: 16px; }
-	.home-view .home-shell { padding-top: 16px; }
-	.home-view .brand-mark { margin-bottom: 20px; }
-	.home-view .home-copy h1 { font-size: 44px; line-height: .86; }
+	.home-view .local-note { margin-top: 12px; }
+	.home-view .home-shell { padding-top: 10px; }
+	.home-view .brand-mark { margin-bottom: 16px; }
+	.home-view .home-copy h1 { font-size: 40px; line-height: .86; }
 	.home-view .home-copy .eyebrow { margin-bottom: 8px; font-size: 9px; }
-	.home-view .intro { margin: 10px 0 16px; font-size: 14px; }
-	.home-view .setup-panel { padding-top: 10px; }
+	.home-view .intro { margin: 10px 0 14px; font-size: 13px; }
+	.home-view .setup-panel { padding-top: 8px; }
 	.home-view .panel-label { margin-bottom: 8px; font-size: 9px; }
 	.home-view .picker { padding: 4px 0 6px; }
 	.home-view .picker span { font-size: 9px; margin-bottom: 2px; }
-	.home-view .picker select { font-size: 17px; }
+	.home-view .picker select { font-size: 16px; }
 	.home-view .versus { padding: 4px 0; font-size: 10px; }
 	.home-view .primary-button { padding: 10px 13px; margin-top: 10px; min-width: 170px; font-size: 12px; }
 	.home-view .online-box { margin-top: 10px; padding-top: 9px; }
@@ -133,6 +134,7 @@ html, body { overflow: hidden; }
 .update-banner small { display: block; color: #cfd4d2; font-size: 10px; margin-top: 2px; }
 .update-banner .primary-button.small { width: auto; white-space: nowrap; }
 .update-banner .primary-button.small[disabled] { opacity: 0.6; pointer-events: none; }
+.version-tag { position: fixed; right: 10px; bottom: 8px; font: 10px 'DM Mono', monospace; color: #6b7573; letter-spacing: 0.05em; z-index: 1; }
 .created-room-details small { display: block; font-size: 9px; color: #a0b0aa; font-family: 'DM Mono', monospace; }
 .close-room-btn { border: 0; background: transparent; color: #ff8060; font-size: 16px; font-weight: 700; cursor: pointer; padding: 2px 6px; }
 .close-room-btn:hover { color: #ff5533; }

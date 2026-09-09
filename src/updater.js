@@ -4,6 +4,16 @@ function getPlugin() {
   return window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins?.ApkUpdater : null
 }
 
+export async function getInstalledVersion() {
+  const plugin = getPlugin()
+  if (!plugin) return null
+  try {
+    return await plugin.getVersionInfo()
+  } catch {
+    return null
+  }
+}
+
 export async function checkForUpdate() {
   const plugin = getPlugin()
   if (!plugin) return { available: false }
