@@ -1,0 +1,27 @@
+{
+  "name": "leet-arena-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server": "node server.js",
+    "online": "concurrently \"npm run server\" \"npm run dev -- --host 0.0.0.0\"",
+    "build": "vite build",
+    "android:sync": "npm run build && cap sync android",
+    "android:open": "cap open android",
+    "android:debug": "npm run android:sync && cap run android",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.1",
+    "concurrently": "^10.0.5",
+    "typescript": "^7.0.2",
+    "vite": "^7.1.5"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "ws": "^8.21.3"
+  }
+}
