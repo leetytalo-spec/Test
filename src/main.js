@@ -137,7 +137,7 @@ const characters = {
 const state = {
   screen: storedAuthToken ? (storedUser?.role === 'admin' ? 'dashboard' : 'home') : 'auth', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
   online: false, socket: null, roomFeedSocket: null, roomCode: '', createdRoomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [], onlinePlayerNames: [],
-  homeMode: '', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false, actionNotice: '',
+  homeMode: '', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false,
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }], hpDeltas: [null, null],
   updateAvailable: false, updateManifest: null, updateStatus: '', updateError: '', updateInstalling: false, updateProgress: 0, updateDownloaded: 0, updateTotal: 0, appVersionName: '',
   adminTab: 'upload', adminUpload: { character: 'cedric', ability: 'basic', file: null, status: '' },
@@ -897,7 +897,7 @@ function renderBattle() {
   const p1Percent = Math.min(100, Math.max(0, p1.hp / p1.maxHp * 100))
   const p2Percent = Math.min(100, Math.max(0, p2.hp / p2.maxHp * 100))
   return `<section class="battle-shell">
-    <header class="battle-topbar"><div class="top-player"><strong>${battleSlotLabel(0, p1)}</strong>${hpDeltaBadge(0)}<div class="top-hp"><i style="width:${p1Percent}%; background:${getHpBarColor(p1Percent)}"></i><span class="top-hp-value">${p1.hp}/${p1.maxHp}</span></div></div><div class="turn-count">TURNO <strong>${state.turn}</strong><span class="turn-timer">${Math.max(0, state.turnTimeLeft)}s</span></div><div class="top-player opponent"><strong>${battleSlotLabel(1, p2)}</strong>${hpDeltaBadge(1)}<div class="top-hp"><i style="width:${p2Percent}%; background:${getHpBarColor(p2Percent)}"></i><span class="top-hp-value">${p2.hp}/${p2.maxHp}</span></div></div></header>
+    <header class="battle-topbar"><div class="top-player"><strong>${battleSlotLabel(0, p1)}</strong>${hpDeltaBadge(0)}<div class="top-hp"><i style="width:${p1Percent}%; background:${getHpBarColor(p1Percent)}"></i></div><span>${p1.hp}/${p1.maxHp}</span></div><div class="turn-count">TURNO <strong>${state.turn}</strong><span class="turn-timer">${Math.max(0, state.turnTimeLeft)}s</span></div><div class="top-player opponent"><strong>${battleSlotLabel(1, p2)}</strong>${hpDeltaBadge(1)}<div class="top-hp"><i style="width:${p2Percent}%; background:${getHpBarColor(p2Percent)}"></i></div><span>${p2.hp}/${p2.maxHp}</span></div></header>
     <div class="battle-layout">
       <div class="arena-column">
         ${lastActionPanel()}
@@ -913,7 +913,6 @@ function renderBattle() {
     ${renderDenyPickerModal()}
     ${renderForesightPickerModal()}
     ${renderPressurePickerModal()}
-    ${renderActionNoticeModal()}
     ${state.chatOpen ? renderChatModal() : ''}
   </section>`
 }
@@ -976,19 +975,6 @@ function renderDenyPickerModal() {
       <div class="deny-options">${options.map((ability) => `<button class="deny-option" data-deny-target="${ability.id}">${escapeHtml(ability.name)}</button>`).join('')}</div>
       <div class="modal-btns">
         <button class="primary-button small secondary" data-action="cancel-deny">CANCELAR</button>
-      </div>
-    </div>
-  </div>`
-}
-
-function renderActionNoticeModal() {
-  if (!state.actionNotice) return ''
-  return `<div class="modal-overlay">
-    <div class="modal-card">
-      <p class="modal-title">AVISO</p>
-      <p class="modal-sub">${escapeHtml(state.actionNotice)}</p>
-      <div class="modal-btns">
-        <button class="primary-button small" data-action="close-action-notice">ENTENDI</button>
       </div>
     </div>
   </div>`
@@ -1486,7 +1472,6 @@ function bindEvents() {
   document.querySelector('[data-action="skip"]')?.addEventListener('click', skipTurn)
   document.querySelector('[data-action="prompt-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = true; render(); })
   document.querySelector('[data-action="cancel-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = false; render(); })
-  document.querySelector('[data-action="close-action-notice"]')?.addEventListener('click', () => { state.actionNotice = ''; render(); })
   document.querySelector('[data-action="confirm-surrender"]')?.addEventListener('click', () => {
     if (state.online && !state.result) recordMatchResult('loss')
     clearOnlineSession()
@@ -1533,14 +1518,6 @@ function bindEvents() {
         state.pressurePickerOpen = true
         render()
         return
-      }
-      if (ability?.kind === 'nox-mark') {
-        const opponent = state.players[activeIndex === 0 ? 1 : 0]
-        if (opponent?.noxMarks >= 10) {
-          state.actionNotice = 'Nox já atingiu o máximo de 10 marcas aplicadas, para adicionar mais marcas, ative o acionador agora!'
-          render()
-          return
-        }
       }
       chooseAbility(phase, button.dataset.ability)
     })

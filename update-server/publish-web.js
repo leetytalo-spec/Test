@@ -32,7 +32,7 @@ function main() {
     versionName: `web-${version}`,
     notes,
     sha256: crypto.createHash('sha256').update(fs.readFileSync(zipPath)).digest('hex'),
-    downloadUrl: `${BASE_URL}/updates/${fileName}`,
+    downloadUrl: `${BASE_URL}/updates/web/${fileName}`,
     publishedAt: new Date().toISOString(),
   }
 
