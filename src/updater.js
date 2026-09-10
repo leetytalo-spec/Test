@@ -1,6 +1,6 @@
 import { registerPlugin } from '@capacitor/core'
 
-const UPDATE_MANIFEST_URL = 'https://leetarena.zorobot.shop/updates/latest.json'
+const UPDATE_MANIFEST_URL = 'https://leetarena.tech/updates/latest.json'
 const WEB_UPDATE_MANIFEST_URL = 'https://leetarena.tech/updates/web.json'
 const ApkUpdater = registerPlugin('ApkUpdater')
 
