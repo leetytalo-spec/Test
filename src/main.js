@@ -22,7 +22,6 @@ const characters = {
       { id: 'mark', name: 'Marcar alvo', detail: 'Aplica uma marca no oponente. Ao acertar 2 ataques básicos consecutivos e bem-sucedidos, ativa a marca, causando um dano extra de 270 de dano. 2 usos.', kind: 'mark', uses: 2 },
       { id: 'execute', name: 'Execução!', detail: 'Quando o oponente atinge 25% de HP restante, essa habilidade pode ser ativada, executando instantaneamente o alvo. 1 uso.', kind: 'execute', uses: 1 },
       { id: 'bindings', name: 'Amarras', detail: 'Retira o livre arbítrio do oponente, fazendo com que ele seja obrigado a realizar 2 ataques básicos seguidos em você, porém oferece 100 de Aumento de Dano ao ataque básico do oponente, nesses 2 turnos. 3 usos.', kind: 'bindings', uses: 3 },
-      { id: 'frieza', name: 'Frieza', detail: 'Passiva. Se receber 3 ataques básicos consecutivos, recupera 300 de HP. 2 usos.', kind: 'frieza' },
     ],
   },
   voss: {
@@ -33,8 +32,6 @@ const characters = {
       { id: 'impulse', name: 'Impulso', detail: 'Aumento o dano do ataque básico em +250 apenas no próximo turno. Custa 55 de fúria. Ilimitado.', kind: 'impulse' },
       { id: 'heal', name: 'Cura', detail: 'Recupera 250 de HP, custa 30 de fúria. Ilimitado.', kind: 'heal' },
       { id: 'denial', name: 'Negação', detail: 'Bloqueia o oponente de usar 1 habilidade ativa por 2 turnos. Custo: 25 de fúria.', kind: 'deny' },
-      { id: 'rancor', name: 'Rancor', detail: 'Passiva. Se sofrer um dano único maior que 250, ganha 20 de fúria. Ilimitado.', kind: 'rancor' },
-      { id: 'rumination', name: 'Ruminação', detail: 'Passiva. Se sofrer 3 ataques consecutivos do mesmo tipo, ganha 15 de fúria. Ilimitado.', kind: 'rumination' },
     ],
   },
   damon: {
@@ -45,19 +42,18 @@ const characters = {
       { id: 'resurrect', name: 'Ressuscitar', detail: 'Após receber 5 ataques básicos, escapa de 1 ataque fatal, recupera 500 HP e ganha +60 no ataque básico. 1 uso.', kind: 'resurrect', uses: 1 },
       { id: 'pain-hunger', name: 'Fome de dor', detail: 'Obriga o oponente a usar ataque básico no próximo turno e concede +70 de dano a ele nesse turno. Ilimitado.', kind: 'taunt' },
       { id: 'broken-limit', name: 'Limite Rompido', detail: 'Causa 45% de todo dano recebido nos últimos 11 turnos. Após o 11º turno. 1 uso.', kind: 'broken-limit', uses: 1 },
-      { id: 'resistance', name: 'Resistência', detail: 'Passiva. A cada 200 HP perdidos, reduz permanentemente em 5 o dano recebido. Ilimitado.', kind: 'resistance' },
+      { id: 'resistance', name: 'Resistência', detail: 'A cada 200 HP perdidos, reduz permanentemente em 5 o dano de ataques básicos recebidos. Ilimitado.', kind: 'resistance' },
     ],
   },
   kyn: {
     id: 'kyn', name: 'Kyn', title: 'O Devedor', hp: 1250, accent: '#e7b65c',
     abilities: [
-      { id: 'basic', name: 'Ataque básico', detail: 'Causa 55 de dano. Ilimitado.', kind: 'damage', damage: 55 },
-      { id: 'drain', name: 'Dreno', detail: 'Causa dano disponível e recupera 75% desse dano. O bônus não acumula.', kind: 'drain' },
-      { id: 'foresight', name: 'Premonição', detail: 'Se adivinhar a próxima ação exata do oponente, ganha 125 de dano em Dreno. Ilimitado.', kind: 'foresight' },
+      { id: 'basic', name: 'Dreno', detail: 'Ataque básico do Kyn. Por padrão causa 0 de dano; se Premonição acertar, causa 125 no próximo uso e recupera 75% desse bônus.', kind: 'damage', damage: 0 },
+      { id: 'foresight', name: 'Premonição', detail: 'Escolha a ação que o oponente usará. Se acertar, o próximo Dreno ganha 125 de dano. Não acumula.', kind: 'foresight' },
       { id: 'harvest', name: 'Colheita', detail: 'Registra por 4 turnos toda cura recebida pelo oponente e converte o total em Dreno. 1 uso.', kind: 'harvest', uses: 1 },
       { id: 'second-life', name: 'Sobrevida', detail: 'Sobrevive com 1 HP ao próximo dano fatal e ganha 200 de dano em Dreno. 1 uso.', kind: 'second-life', uses: 1 },
-      { id: 'patience', name: 'Paciência', detail: 'Passiva. Após 3 turnos sem receber ataque básico, ganha 100 de dano em Dreno. Ilimitado.', kind: 'patience' },
-      { id: 'tribute', name: 'Tributo', detail: 'Passiva. Após 3 turnos sem adquirir dano em Dreno, ganha 200 de dano em Dreno e perde 150 HP. Ilimitado.', kind: 'tribute' },
+      { id: 'patience', name: 'Paciência', detail: 'Passiva. Após 3 turnos sem receber ataque básico, ganha 100 de dano em Dreno.', kind: 'patience' },
+      { id: 'tribute', name: 'Tributo', detail: 'Passiva. Após 3 turnos sem adquirir dano em Dreno, ganha 200 de dano em Dreno e perde 150 HP.', kind: 'tribute' },
     ],
   },
   nox: {
@@ -66,9 +62,9 @@ const characters = {
       { id: 'basic', name: 'Ataque básico', detail: 'Causa 80 de dano. Ilimitado.', kind: 'damage', damage: 80 },
       { id: 'marked', name: 'Marcado', detail: 'Aplica uma marca no alvo. Ao atingir 10 marcas, precisa usar Acionador para marcar novamente. Ilimitado.', kind: 'nox-mark' },
       { id: 'trigger', name: 'Acionador', detail: 'Explode as marcas do alvo. Cada marca causa 60 de dano. Ilimitado.', kind: 'nox-trigger' },
-      { id: 'pressure', name: 'Pressão', detail: 'Ganha carga a cada 5 marcas aplicadas e bloqueia 1 ação do alvo no próximo turno.', kind: 'nox-pressure' },
-      { id: 'reconstruction', name: 'Reconstrução', detail: 'Passiva. Com 8 marcas no alvo, recebe também toda cura que ele receber.', kind: 'nox-reconstruction' },
-      { id: 'progression', name: 'Progressão', detail: 'Passiva. Ativa 1 marca no alvo a cada 5 turnos.', kind: 'nox-progression' },
+      { id: 'pressure', name: 'Pressão', detail: 'Consome 1 carga para escolher uma habilidade do oponente e bloqueá-la por 1 turno.', kind: 'nox-pressure' },
+      { id: 'reconstruction', name: 'Reconstrução', detail: 'Com 8 marcas no alvo, recebe também toda cura que ele receber.', kind: 'nox-reconstruction' },
+      { id: 'progression', name: 'Progressão', detail: 'Passiva. Adiciona 1 marca no alvo a cada 5 turnos, respeitando o limite de 10 marcas.', kind: 'nox-progression' },
     ],
   },
   brick: {
@@ -76,8 +72,8 @@ const characters = {
     abilities: [
       { id: 'basic', name: 'Ataque básico (Soco)', detail: 'Causa 25 de dano. Ilimitado.', kind: 'damage', damage: 25, damageType: 'punch' },
       { id: 'direct', name: 'Chute', detail: 'Causa 35 de dano. 3 usos.', kind: 'damage', damage: 35, uses: 3, damageType: 'kick' },
-      { id: 'counter', name: 'Contra-Golpe', detail: 'Passiva. Ao receber ataque básico, tem 50% de chance de executar um Soco adicional.', kind: 'counter' },
-      { id: 'retaliation', name: 'Retaliação', detail: 'Ao acertar 6 Socos, 2 Chutes e 2 Esquivas, causa 700 de dano e reseta todas as skills. Ilimitado.', kind: 'retaliation' },
+      { id: 'counter', name: 'Contra-Golpe', detail: 'Ao receber ataque básico, tem 50% de chance de executar um Soco adicional.', kind: 'counter' },
+      { id: 'retaliation', name: 'Retaliação', detail: 'Com 2 esquivas, 2 Chutes e 6 Socos recebidos, causa 700 de dano e reseta as skills. Ilimitado.', kind: 'retaliation' },
       { id: 'dodge', name: 'Esquiva', detail: 'Se receber ataque básico no próximo turno, evita o dano. 4 usos.', kind: 'dodge', uses: 4 },
       { id: 'provoke', name: 'Provocar', detail: 'Obriga o oponente a usar ataque básico no próximo turno e concede +150 de dano a ele. Ilimitado.', kind: 'taunt', tauntBonus: 150 },
     ],
@@ -85,11 +81,10 @@ const characters = {
   zero: {
     id: 'zero', name: 'Zero', title: 'O Analista', hp: 1500, accent: '#c9d8e8',
     abilities: [
-      { id: 'basic', name: 'Ataque básico', detail: 'Causa 45 de dano. Ilimitado.', kind: 'damage', damage: 45 },
+      { id: 'basic', name: 'Ataque básico', detail: 'Causa dano conforme a Evolução. Se o oponente usar ataque básico ao mesmo tempo, Sou o melhor! anula esse ataque e Zero ganha 30 de experiência.', kind: 'damage', damage: 45 },
       { id: 'analysis', name: 'Análise', detail: 'Se acertar a próxima habilidade do oponente, ganha 30 de experiência. Não analisa ataques básicos.', kind: 'analysis' },
       { id: 'evolution', name: 'Evolução', detail: 'Passiva. A experiência aumenta o dano básico: Nv.1 45, Nv.2 75, Nv.3 120, Nv.4 170, Nv.5 265.', kind: 'zero-evolution' },
       { id: 'survival', name: 'Modo sobrevivência', detail: 'Passiva. Quando o oponente tem mais HP, ganha 20% de roubo de vida no ataque básico.', kind: 'zero-survival' },
-      { id: 'best', name: 'Sou o melhor!', detail: 'Se ambos usarem ataque básico, anula o ataque do oponente e ganha 30 de experiência. 7 usos.', kind: 'zero-best', uses: 7 },
     ],
   },
   haku: {
@@ -113,7 +108,6 @@ const characters = {
       { id: 'kick', name: 'Chutar', detail: 'Chuta o oponente para fora da arena, impedindo-o de jogar por 1 turno. 1 uso.', kind: 'ogro-kick', uses: 1 },
       { id: 'roar', name: 'Rugido', detail: 'Recebe 30% de redução de dano durante os próximos 2 turnos. 1 uso.', kind: 'ogro-roar', uses: 1 },
       { id: 'throw', name: 'Jogar para o Alto', detail: 'No próximo turno, a habilidade que o oponente poderá usar será escolhida aleatoriamente. 1 uso.', kind: 'ogro-throw', uses: 1 },
-      { id: 'pantry', name: 'Hora do Rango', detail: 'Passiva. Após o 22º turno, ganha +500 de dano permanente no ataque básico.', kind: 'ogro-pantry' },
     ],
   },
   kiro: {
@@ -143,8 +137,8 @@ const characters = {
 const state = {
   screen: storedAuthToken ? (storedUser?.role === 'admin' ? 'dashboard' : 'home') : 'auth', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
   online: false, socket: null, roomFeedSocket: null, roomCode: '', createdRoomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [], onlinePlayerNames: [],
-  homeMode: '', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false,
-  lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
+  homeMode: '', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false, actionNotice: '',
+  lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }], hpDeltas: [null, null],
   updateAvailable: false, updateManifest: null, updateStatus: '', updateError: '', updateInstalling: false, updateProgress: 0, updateDownloaded: 0, updateTotal: 0, appVersionName: '',
   adminTab: 'upload', adminUpload: { character: 'cedric', ability: 'basic', file: null, status: '' },
   adminIdle: { character: 'cedric', file: null, status: '' }, adminIcon: { character: 'cedric', file: null, status: '' },
@@ -152,7 +146,7 @@ const state = {
   battleLoading: false, battleLoadProgress: 0, battleLoadTotal: 0, battleLoadStatus: '', characterChoice: null, characterOpponentChosen: false, characterTimeLeft: 45, characterTimerId: null,
   dashboardTab: 'overview', dashboardRange: 'daily', dashboardFilter: 'all', dashboardQuery: '', dashboardNotice: '', dashboardSearchOpen: false,
   setupOpen: false, profileOpen: false, profileDraft: '', leaderboardOpen: false, comingSoonOpen: false, comingSoonLabel: '',
-  denyPickerOpen: false, denyTargetAbilityId: '', predictionPickerFor: '', predictionTargetAbilityId: '', battleNotice: '', modeDrawerEntering: false, codexOpen: false, codexCharacter: 'cedric', mailboxOpen: false, adminMail: { subject: '', body: '', status: '' }, chatOpen: false, chatTab: 'general', generalChatMessages: [], privateChatMessages: [], chatDraft: '',
+  denyPickerOpen: false, denyTargetAbilityId: '', foresightPickerOpen: false, pressurePickerOpen: false, modeDrawerEntering: false, codexOpen: false, codexCharacter: 'cedric', mailboxOpen: false, adminMail: { subject: '', body: '', status: '' }, chatOpen: false, chatTab: 'general', generalChatMessages: [], privateChatMessages: [], chatDraft: '',
   videoQueue: [], videoPlaying: false, turnTimeLeft: 40, turnTimerId: null, loadingTipIndex: 0, loadingTipTimerId: null,
 }
 
@@ -470,7 +464,7 @@ function renderCodexModal() {
               <span class="codex-tab-copy"><strong>${character.name}</strong><small>${character.title} · ${character.hp} HP</small></span>
               <span class="codex-arrow">${open ? '−' : '+'}</span>
             </button>
-            ${open ? `<div class="codex-drawer">${character.abilities.map((ability) => `<article class="codex-ability"><strong>${escapeHtml(ability.name)}</strong><div class="codex-ability-detail">${escapeHtml(ability.detail)}</div></article>`).join('')}</div>` : ''}
+            <div class="codex-drawer" ${open ? '' : 'hidden'}>${character.abilities.map((ability) => `<article class="codex-ability"><strong>${escapeHtml(ability.name)}</strong><div class="codex-ability-detail">${escapeHtml(ability.detail)}</div></article>`).join('')}</div>
           </div>`
         }).join('')}
       </div>
@@ -903,7 +897,7 @@ function renderBattle() {
   const p1Percent = Math.min(100, Math.max(0, p1.hp / p1.maxHp * 100))
   const p2Percent = Math.min(100, Math.max(0, p2.hp / p2.maxHp * 100))
   return `<section class="battle-shell">
-    <header class="battle-topbar"><div class="top-player"><strong>${battleSlotLabel(0, p1)}</strong><div class="top-hp"><i style="width:${p1Percent}%; background:${getHpBarColor(p1Percent)}"></i></div><span>${p1.hp}/${p1.maxHp}</span></div><div class="turn-count">TURNO <strong>${state.turn}</strong><span class="turn-timer">${Math.max(0, state.turnTimeLeft)}s</span></div><div class="top-player opponent"><strong>${battleSlotLabel(1, p2)}</strong><div class="top-hp"><i style="width:${p2Percent}%; background:${getHpBarColor(p2Percent)}"></i></div><span>${p2.hp}/${p2.maxHp}</span></div></header>
+    <header class="battle-topbar"><div class="top-player"><strong>${battleSlotLabel(0, p1)}</strong>${hpDeltaBadge(0)}<div class="top-hp"><i style="width:${p1Percent}%; background:${getHpBarColor(p1Percent)}"></i><span class="top-hp-value">${p1.hp}/${p1.maxHp}</span></div></div><div class="turn-count">TURNO <strong>${state.turn}</strong><span class="turn-timer">${Math.max(0, state.turnTimeLeft)}s</span></div><div class="top-player opponent"><strong>${battleSlotLabel(1, p2)}</strong>${hpDeltaBadge(1)}<div class="top-hp"><i style="width:${p2Percent}%; background:${getHpBarColor(p2Percent)}"></i><span class="top-hp-value">${p2.hp}/${p2.maxHp}</span></div></div></header>
     <div class="battle-layout">
       <div class="arena-column">
         ${lastActionPanel()}
@@ -918,9 +912,55 @@ function renderBattle() {
     ${renderSurrenderModal()}
     ${renderDenyPickerModal()}
     ${renderForesightPickerModal()}
-    ${renderBattleNotice()}
+    ${renderPressurePickerModal()}
+    ${renderActionNoticeModal()}
     ${state.chatOpen ? renderChatModal() : ''}
   </section>`
+}
+
+function hpDeltaBadge(index) {
+  const delta = state.hpDeltas?.[index]
+  if (!delta) return ''
+  return `<span class="hp-delta-stack">
+    ${delta.damage ? `<b class="hp-delta damage">-${delta.damage}</b>` : ''}
+    ${delta.heal ? `<b class="hp-delta heal">+${delta.heal}</b>` : ''}
+  </span>`
+}
+
+function renderPressurePickerModal() {
+  if (!state.pressurePickerOpen) return ''
+  const activeIndex = state.online ? state.playerIndex : state.phase === 'p1' ? 0 : 1
+  const opponent = state.players[activeIndex === 0 ? 1 : 0]
+  if (!opponent) return ''
+  const options = opponent.character.abilities.filter((ability) => !isPassiveAbility(ability))
+  return `<div class="modal-overlay">
+    <div class="modal-card deny-picker">
+      <p class="modal-title">PRESSÃO</p>
+      <p class="modal-sub">Escolha qual habilidade de ${escapeHtml(opponent.name)} será bloqueada por 1 turno.</p>
+      <div class="deny-options">${options.map((ability) => `<button class="deny-option" data-pressure-target="${ability.id}">${escapeHtml(ability.name)}</button>`).join('')}</div>
+      <div class="modal-btns">
+        <button class="primary-button small secondary" data-action="cancel-pressure">CANCELAR</button>
+      </div>
+    </div>
+  </div>`
+}
+
+function renderForesightPickerModal() {
+  if (!state.foresightPickerOpen) return ''
+  const activeIndex = state.online ? state.playerIndex : state.phase === 'p1' ? 0 : 1
+  const opponent = state.players[activeIndex === 0 ? 1 : 0]
+  if (!opponent) return ''
+  const options = opponent.character.abilities.filter((ability) => !isPassiveAbility(ability))
+  return `<div class="modal-overlay">
+    <div class="modal-card deny-picker">
+      <p class="modal-title">PREMONIÇÃO</p>
+      <p class="modal-sub">Qual ação ${escapeHtml(opponent.name)} usará no próximo turno?</p>
+      <div class="deny-options">${options.map((ability) => `<button class="deny-option" data-foresight-target="${ability.id}">${escapeHtml(ability.name)}</button>`).join('')}</div>
+      <div class="modal-btns">
+        <button class="primary-button small secondary" data-action="cancel-foresight">CANCELAR</button>
+      </div>
+    </div>
+  </div>`
 }
 
 function renderDenyPickerModal() {
@@ -941,32 +981,14 @@ function renderDenyPickerModal() {
   </div>`
 }
 
-function renderBattleNotice() {
-  if (!state.battleNotice) return ''
+function renderActionNoticeModal() {
+  if (!state.actionNotice) return ''
   return `<div class="modal-overlay">
     <div class="modal-card">
       <p class="modal-title">AVISO</p>
-      <p class="modal-sub">${escapeHtml(state.battleNotice)}</p>
+      <p class="modal-sub">${escapeHtml(state.actionNotice)}</p>
       <div class="modal-btns">
-        <button class="primary-button small" data-action="close-battle-notice">ENTENDI</button>
-      </div>
-    </div>
-  </div>`
-}
-
-function renderForesightPickerModal() {
-  if (!state.predictionPickerFor) return ''
-  const activeIndex = state.online ? state.playerIndex : state.phase === 'p1' ? 0 : 1
-  const opponent = state.players[activeIndex === 0 ? 1 : 0]
-  if (!opponent) return ''
-  const options = opponent.character.abilities.filter((ability) => !isPassiveAbility(ability))
-  return `<div class="modal-overlay">
-    <div class="modal-card deny-picker">
-      <p class="modal-title">PREVER QUAL AÇÃO?</p>
-      <p class="modal-sub">Escolha a ação que ${escapeHtml(opponent.name)} usará no próximo turno.</p>
-      <div class="deny-options">${options.map((ability) => `<button class="deny-option" data-foresight-target="${ability.id}">${escapeHtml(ability.name)}</button>`).join('')}</div>
-      <div class="modal-btns">
-        <button class="primary-button small secondary" data-action="cancel-foresight">CANCELAR</button>
+        <button class="primary-button small" data-action="close-action-notice">ENTENDI</button>
       </div>
     </div>
   </div>`
@@ -988,7 +1010,7 @@ function renderSurrenderModal() {
 
 function lastActionPanel() {
   const latest = state.lastTurnActions.length ? state.lastTurnActions : [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }]
-  const formatAction = (entry) => entry.text
+  const formatAction = (entry) => entry.player ? `${entry.player}: ${entry.text}` : entry.text
   return `<div class="last-action"><div class="last-action-title">ÚLTIMA AÇÃO</div><div class="last-action-copy"><strong>${formatAction(latest[0])}</strong><span class="crossed-swords">⚔</span><strong>${formatAction(latest[1])}</strong></div></div>`
 }
 
@@ -1006,7 +1028,9 @@ function actionPanel(player, opponent) {
   const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
   const selected = state.selections[phase]
   const basic = player.character.abilities.find((ability) => ability.id === 'basic')
-  const secondary = player.character.abilities.find((ability) => ability.id !== 'basic' && ability.kind !== 'pending' && !isPassiveAbility(ability))
+  const activeAbilities = player.character.abilities.filter((ability) => ability.id !== 'basic' && ability.kind !== 'pending' && !isPassiveAbility(ability))
+  const secondary = activeAbilities[0]
+  const extraAbilities = activeAbilities.slice(1)
   const passives = player.character.abilities.filter(isPassiveAbility)
   if (state.online && state.onlineWaiting) {
     return `<div class="action-panel"><div class="waiting-opponent"><span class="pulse-dot">●</span><strong>AGUARDANDO JOGADA DO OPONENTE</strong><small>Sua ação foi registrada neste turno.</small></div></div>`
@@ -1018,16 +1042,14 @@ function actionPanel(player, opponent) {
   const forcedBasicNow = player.forcedBasicTurns > 0 && state.turn >= player.forcedBasicStartsTurn
   return `<div class="action-panel"><div class="action-header"><div><p class="eyebrow">${phase === 'p1' ? 'JOGADOR 1' : 'JOGADOR 2'} / ${state.onlineWaiting ? 'AGUARDANDO OPONENTE' : 'ESCOLHA OCULTA'}</p><h3>${selected ? 'AÇÃO SELECIONADA' : `ESCOLHA DE ${player.name.toUpperCase()}`}</h3></div><span class="lock-icon">${selected ? '◉' : '○'}</span></div>
     <div class="action-buttons">${basic ? abilityButton(player, opponent, basic, selected) : ''}${secondary ? abilityButton(player, opponent, secondary, selected) : ''}${passives.length ? passiveInfoButton(passives) : ''}</div>
-    <div class="extra-abilities">${player.character.abilities.filter((ability) => ability.id !== basic?.id && ability.id !== secondary?.id && !isPassiveAbility(ability)).map((ability) => abilityButton(player, opponent, ability, selected)).join('')}</div>
+    <div class="extra-abilities">${extraAbilities.map((ability) => abilityButton(player, opponent, ability, selected)).join('')}</div>
     <div class="action-footer">${selected ? '<span class="confirmed">ESCOLHA SELECIONADA · AÇÃO ENVIADA IMEDIATAMENTE</span>' : '<span class="muted">Toque para lançar · segure para ver a descrição.</span>'}</div>
     <button class="skip-button" data-action="skip" ${forcedBasicNow ? 'disabled' : ''}>⏭ &nbsp; PULAR TURNO</button>
   </div>`
 }
 
-const passiveKinds = ['zero-evolution', 'zero-survival', 'zero-best', 'haku-last-dance', 'haku-concentration', 'kiro-luck', 'sany-courage', 'sany-last-chance', 'resistance', 'counter', 'frieza', 'rancor', 'rumination', 'patience', 'tribute', 'nox-reconstruction', 'nox-progression', 'ogro-pantry']
-
 function isPassiveAbility(ability) {
-  return passiveKinds.includes(ability.kind)
+  return ['zero-evolution', 'zero-survival', 'haku-last-dance', 'haku-concentration', 'kiro-luck', 'sany-courage', 'sany-last-chance', 'resistance', 'patience', 'tribute', 'nox-progression'].includes(ability.kind)
 }
 
 function passiveInfoButton(passives) {
@@ -1035,33 +1057,27 @@ function passiveInfoButton(passives) {
   return `<button class="ability passive-info-button" type="button" data-passive-info="${escapeHtml(details)}"><span class="ability-orb"><i data-lucide="ShieldCheck"></i></span><strong>Passivas</strong><span class="ability-tip passive-tip" hidden>${escapeHtml(details)}</span></button>`
 }
 
+function selectedAbilityId(selection) {
+  return String(selection || '').split(':')[0]
+}
+
 const abilityIcons = { damage: 'Swords', predatory: 'Zap', mark: 'Target', execute: 'Skull', bindings: 'Link', rage: 'Flame', impulse: 'Zap', heal: 'Heart', deny: 'Ban', 'ogro-grab': 'Link', 'ogro-squeeze': 'Flame', 'ogro-release': 'LogOut', 'ogro-kick': 'Zap', 'ogro-roar': 'Activity', 'ogro-throw': 'Sparkles' }
 
 function abilityButton(player, opponent, ability, selected) {
   const disabled = isAbilityUnavailable(player, opponent, ability) || state.onlineWaiting
   const icon = abilityIcons[ability.kind] || 'Sparkles'
-  return `<button class="ability ${selected === ability.id ? 'chosen' : ''} ${disabled ? 'disabled' : ''}" data-ability="${ability.id}" ${disabled ? 'disabled' : ''}>
+  return `<button class="ability ${selectedAbilityId(selected) === ability.id ? 'chosen' : ''} ${disabled ? 'disabled' : ''}" data-ability="${ability.id}" ${disabled ? 'disabled' : ''}>
     <span class="ability-orb"><i data-lucide="${icon}"></i>${ability.uses !== undefined ? `<em>${player.uses[ability.id] ?? ability.uses}</em>` : ''}</span>
     <strong>${escapeHtml(ability.name)}</strong>
     <span class="ability-tip" hidden>${escapeHtml(ability.detail)}</span>
   </button>`
 }
 
-function isRetaliationReady(player) {
-  return player.brickPunchesLanded >= 6 && player.brickKicksLanded >= 2 && player.brickDodges >= 2
-}
-
-function countBrickBlow(player, damageType) {
-  if (damageType === 'punch') player.brickPunchesLanded += 1
-  else if (damageType === 'kick') player.brickKicksLanded += 1
-}
-
 function isAbilityUnavailable(player, opponent, ability) {
   const forcedBasic = player.forcedBasicTurns > 0 && state.turn >= player.forcedBasicStartsTurn
-  if (isPassiveAbility(ability)) return true
   if (player.ogroForcedAbilityId) return ability.id !== player.ogroForcedAbilityId
   return (forcedBasic && ability.id !== 'basic')
-    || (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id === 'basic' && !forcedBasic)
+    || (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id !== 'deep-cut')
     || (player.character?.id === 'ogro' && player.ogroGrabActive && ability.id !== 'squeeze' && ability.id !== 'release')
     || (player.character?.id === 'ogro' && !player.ogroGrabActive && (ability.id === 'squeeze' || ability.id === 'release'))
     || (ability.uses !== undefined && player.uses[ability.id] === 0)
@@ -1072,7 +1088,8 @@ function isAbilityUnavailable(player, opponent, ability) {
     || (ability.kind === 'resurrect' && !player.resurrectUnlocked)
     || (ability.kind === 'broken-limit' && state.turn <= 11)
     || (ability.kind === 'nox-trigger' && !opponent.noxMarks)
-    || (ability.kind === 'retaliation' && !isRetaliationReady(player))
+    || (ability.kind === 'nox-pressure' && player.noxPressureCharges <= 0)
+    || (ability.kind === 'retaliation' && !(player.brickDodges >= 2 && player.brickPunchesReceived >= 6 && player.brickKicksReceived >= 2))
 }
 
 function randomAbilityId(player, opponent) {
@@ -1188,9 +1205,10 @@ function getPlayerStatusEffects(player) {
   if (player.markActive && player.markSource === 'cedric' && player.markBasicHits < 2) {
     debuffs.push(`Marcar Alvo ${player.markBasicHits}/2`)
   }
+  if (player.noxMarks > 0) debuffs.push(`Marcado: ${player.noxMarks}`)
   if (player.blockedAbilityId && state.turn < player.blockedAbilityUntilTurn) {
     const blocked = player.character.abilities.find((item) => item.id === player.blockedAbilityId)
-    if (blocked) debuffs.push(`Negação: ${blocked.name}`)
+    if (blocked) debuffs.push(player.blockedAbilitySource === 'pressure' ? `Pressão: ${blocked.name} - 1 turno` : `Negação: ${blocked.name}`)
   }
   if (player.character?.id === 'damon') {
     if (player.sacrificeActive) buffs.push('Sacrifício')
@@ -1201,26 +1219,22 @@ function getPlayerStatusEffects(player) {
   }
   if (player.character?.id === 'kyn') {
     if (player.drainAvailable > 0) buffs.push(`Dreno ${player.drainAvailable}`)
-    if (player.kynForesightArmed) buffs.push('Premonição')
     if (player.harvestTurns > 0) buffs.push(`Colheita ${player.harvestTurns}/4`)
     if (player.noBasicTurns > 0 && player.noBasicTurns < 3) buffs.push(`Paciência ${player.noBasicTurns}/3`)
     if (player.noDrainTurns > 0 && player.noDrainTurns < 3) buffs.push(`Tributo ${player.noDrainTurns}/3`)
     if (player.secondLifeArmed) buffs.push('Sobrevida')
   }
   if (player.character?.id === 'nox') {
-    if (player.noxMarks > 0) debuffs.push(`Marcado ${player.noxMarks}`)
     if (player.noxPressureCharges > 0) buffs.push(`Pressão ${player.noxPressureCharges}`)
     if (player.noxReconstructionActive) buffs.push('Reconstrução')
   }
   if (player.character?.id === 'brick') {
-    if (player.brickPunchesLanded > 0 || player.brickDodges > 0 || player.brickKicksLanded > 0) {
-      warnings.push(`Retaliação: S ${Math.min(player.brickPunchesLanded, 6)}/6 E ${Math.min(player.brickDodges, 2)}/2 C ${Math.min(player.brickKicksLanded, 2)}/2`)
-    }
+    if (player.brickDodges > 0 || player.brickPunchesReceived > 0 || player.brickKicksReceived > 0) warnings.push(`Retaliação S: ${player.brickPunchesReceived} C: ${player.brickKicksReceived} E: ${player.brickDodges}`)
     if (player.nextTurnDodge) buffs.push('Esquiva')
     if (player.forcedBasicSource === 'provoke') debuffs.push('Provocar')
   }
   if (player.character?.id === 'zero') {
-    if (player.zeroExperience > 0) buffs.push(`Evolução Nv.${player.zeroLevel} · ${player.zeroExperience} EXP`)
+    if (player.zeroExperience > 0) warnings.push(`Evolução Nv.${player.zeroLevel} · ${player.zeroExperience} EXP`)
     if (player.zeroLevel > 1) buffs.push('Modo sobrevivência')
   }
   if (player.character?.id === 'haku') {
@@ -1239,7 +1253,6 @@ function getPlayerStatusEffects(player) {
   }
   if (player.character?.id === 'sany') {
     if (player.sanyAmplificationUntilTurn >= state.turn) buffs.push('Amplificação')
-    if (player.sanyResearchArmed) buffs.push('Pesquisa')
     if (player.uses['lucky-attack'] > 0) buffs.push(`Ataque de sorte ${player.uses['lucky-attack']}`)
   }
   if (player.ogroGrabbedTurns > 0) debuffs.push(`Preso ${player.ogroGrabbedTurns}`)
@@ -1256,26 +1269,7 @@ function fillStatusGroup(panel, groupName, items, icon) {
   container.innerHTML = items.map((text) => `<p class="status-item">${icon} ${escapeHtml(text)}</p>`).join('')
 }
 
-// Os números de dano/cura só aparecem depois que o turno é resolvido pelos dois jogadores.
-function showHpFeedback() {
-  if (!videoCardEl || !state.players?.length) return
-  state.players.forEach((player, index) => {
-    const slot = videoCardEl.querySelector(index === 0 ? '.p1' : '.p2')?.querySelector('.video-slot')
-    if (!slot) return
-    const taken = (player.turnTaken || []).reduce((sum, value) => sum + value, 0)
-    const healed = (player.turnHealed || []).reduce((sum, value) => sum + value, 0)
-    if (!taken && !healed) return
-    slot.querySelector('.hp-feedback')?.remove()
-    const row = document.createElement('div')
-    row.className = 'hp-feedback'
-    row.innerHTML = `${taken ? `<span class="hp-feedback-item damage">-${taken}</span>` : ''}${healed ? `<span class="hp-feedback-item heal">+${healed}</span>` : ''}`
-    slot.appendChild(row)
-    setTimeout(() => row.remove(), 2200)
-  })
-}
-
 function updateStatusPanels() {
-
   if (!videoCardEl || !state.players?.length) return
   state.players.forEach((player) => {
     const wrap = videoCardEl.querySelector(`[data-player-slot="${player.name}"]`) || videoCardEl.querySelector(`.${player === state.players[0] ? 'p1' : 'p2'}`)
@@ -1492,6 +1486,7 @@ function bindEvents() {
   document.querySelector('[data-action="skip"]')?.addEventListener('click', skipTurn)
   document.querySelector('[data-action="prompt-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = true; render(); })
   document.querySelector('[data-action="cancel-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = false; render(); })
+  document.querySelector('[data-action="close-action-notice"]')?.addEventListener('click', () => { state.actionNotice = ''; render(); })
   document.querySelector('[data-action="confirm-surrender"]')?.addEventListener('click', () => {
     if (state.online && !state.result) recordMatchResult('loss')
     clearOnlineSession()
@@ -1529,10 +1524,23 @@ function bindEvents() {
         render()
         return
       }
-      if (ability?.kind === 'foresight' || ability?.kind === 'sany-research') {
-        state.predictionPickerFor = ability.id
+      if (ability?.kind === 'foresight') {
+        state.foresightPickerOpen = true
         render()
         return
+      }
+      if (ability?.kind === 'nox-pressure') {
+        state.pressurePickerOpen = true
+        render()
+        return
+      }
+      if (ability?.kind === 'nox-mark') {
+        const opponent = state.players[activeIndex === 0 ? 1 : 0]
+        if (opponent?.noxMarks >= 10) {
+          state.actionNotice = 'Nox já atingiu o máximo de 10 marcas aplicadas, para adicionar mais marcas, ative o acionador agora!'
+          render()
+          return
+        }
       }
       chooseAbility(phase, button.dataset.ability)
     })
@@ -1557,13 +1565,16 @@ function bindEvents() {
   document.querySelector('[data-action="cancel-deny"]')?.addEventListener('click', () => { state.denyPickerOpen = false; render() })
   document.querySelectorAll('[data-foresight-target]').forEach((button) => button.addEventListener('click', () => {
     const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
-    const abilityId = state.predictionPickerFor
-    state.predictionTargetAbilityId = button.dataset.foresightTarget
-    state.predictionPickerFor = ''
-    chooseAbility(phase, abilityId)
+    state.foresightPickerOpen = false
+    chooseAbility(phase, `foresight:${button.dataset.foresightTarget}`)
   }))
-  document.querySelector('[data-action="cancel-foresight"]')?.addEventListener('click', () => { state.predictionPickerFor = ''; render() })
-  document.querySelector('[data-action="close-battle-notice"]')?.addEventListener('click', () => { state.battleNotice = ''; render() })
+  document.querySelector('[data-action="cancel-foresight"]')?.addEventListener('click', () => { state.foresightPickerOpen = false; render() })
+  document.querySelectorAll('[data-pressure-target]').forEach((button) => button.addEventListener('click', () => {
+    const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
+    state.pressurePickerOpen = false
+    chooseAbility(phase, `pressure:${button.dataset.pressureTarget}`)
+  }))
+  document.querySelector('[data-action="cancel-pressure"]')?.addEventListener('click', () => { state.pressurePickerOpen = false; render() })
   document.querySelector('[data-action="install-update"]')?.addEventListener('click', applyUpdate)
   document.querySelector('[data-action="exit-update"]')?.addEventListener('click', exitApp)
   document.querySelector('[data-action="check-update"]')?.addEventListener('click', checkForUpdateNow)
@@ -1929,15 +1940,10 @@ async function checkForUpdateNow() {
 
 function chooseAbility(phase, abilityId) {
   state.selections[phase] = abilityId
-  const actingIndex = state.online ? state.playerIndex : phase === 'p2' ? 1 : 0
-  const target = state.predictionTargetAbilityId || state.denyTargetAbilityId || ''
-  if (state.players[actingIndex]) state.players[actingIndex].pendingTargetAbilityId = target
-  state.predictionTargetAbilityId = ''
-  state.denyTargetAbilityId = ''
   if (state.online) {
     const ability = abilityId || 'basic'
     state.onlineWaiting = true
-    state.socket?.send(JSON.stringify({ type: 'choose', turn: state.turn, ability, target }))
+    state.socket?.send(JSON.stringify({ type: 'choose', turn: state.turn, ability }))
     render()
     return
   }
@@ -1961,6 +1967,8 @@ async function startGame() {
   const ids = [...document.querySelectorAll('[data-player]')].map((select) => select.value)
   state.players = ids.map((id) => createPlayer(characters[id]))
   state.screen = 'loading'; state.turn = 1; state.phase = 'p1'; state.selections = {}; state.log = []; state.result = ''; state.animation = null; state.online = false; state.onlineWaiting = false; state.opponentChosen = false
+  state.lastTurnActions = [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }]
+  state.hpDeltas = [null, null]
   state.videoQueue = []; state.videoPlaying = false
   render()
   await preloadBattleMedia()
@@ -2052,6 +2060,7 @@ function createPlayer(character) {
     forcedBasicStartsTurn: 0,
     basicDamageBonusExpiresTurn: 0,
     blockedAbilityId: null,
+    blockedAbilitySource: '',
     blockedAbilityUntilTurn: 0,
     forcedBasicBonus: 0,
     basicDamageBonus: 0,
@@ -2064,21 +2073,18 @@ function createPlayer(character) {
     harvestHealing: 0,
     noBasicTurns: 0,
     noDrainTurns: 0,
-    receivedBasicThisTurn: false,
-    kynForesightArmed: false,
-    kynForesightPrediction: '',
-    pendingTargetAbilityId: '',
     noxMarks: 0,
     noxMarksApplied: 0,
     noxPressureCharges: 0,
     noxMarkLocked: false,
     brickDodges: 0,
-    brickPunchesLanded: 0,
-    brickKicksLanded: 0,
+    brickPunchesReceived: 0,
+    brickKicksReceived: 0,
     brickCounterPunches: 0,
     nextTurnDodge: false,
     forcedBasicSource: '',
     sacrificeActive: false,
+    damonResurrectionArmed: false,
     brokenLimitReady: false,
     noxReconstructionActive: false,
     zeroExperience: 0,
@@ -2087,6 +2093,7 @@ function createPlayer(character) {
     hakuBasicStep: 0,
     hakuDefenseTurns: 0,
     hakuBladeDanceArmed: false,
+    hakuBladeDanceResolvedTurn: 0,
     hakuDeepCutTurns: 0,
     hakuLastDanceActive: false,
     ogroGrabActive: false,
@@ -2096,6 +2103,8 @@ function createPlayer(character) {
     ogroForcedAbilityId: null,
     forcedSkipTurns: 0,
     forcedSkipReason: '',
+    turnHealing: [],
+    turnActionLabel: '',
     permanentBasicBonus: 0,
     ogroPantryBonusApplied: false,
     kiroReductionTurns: 0,
@@ -2222,13 +2231,13 @@ async function handleOnlineMessage(message) {
     const ordered = message.players.sort((a, b) => a.index - b.index)
     state.onlinePlayerNames = ordered.map((player) => player.name || '')
     state.players = ordered.map((player) => createPlayer(characters[player.character]))
+    state.lastTurnActions = [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }]
+    state.hpDeltas = [null, null]
     state.phase = `p${state.playerIndex + 1}`; state.screen = 'loading'; render(); await preloadBattleMedia(); state.screen = 'battle'; startTurnTimer(); render(); return
   }
   if (message.type === 'choice-status' && message.index !== state.playerIndex) { state.opponentChosen = true; render(); return }
   if (message.type === 'resolve') {
     state.selections = { p1: message.choices[0], p2: message.choices[1] }
-    const targets = message.targets || []
-    state.players.forEach((player, index) => { player.pendingTargetAbilityId = targets[index] || '' })
     state.onlineWaiting = false
     resolveTurn()
   }
@@ -2264,14 +2273,14 @@ function confirmSelection() {
 
 function resolveTurn() {
   const [p1, p2] = state.players
+  const hpBefore = state.players.map((player) => player.hp)
   state.players.forEach((player, index) => {
+    player.drainGainedThisTurn = false
     if (player.character?.id === 'nox' && state.turn % 5 === 0 && !player.noxMarkLocked) {
       const target = state.players[index === 0 ? 1 : 0]
-      target.noxMarks += 1
-      player.noxMarksApplied += 1
+      addNoxMark(player, target, 1)
     }
     if (player.character?.id === 'damon' && player.damonBasicHitsReceived >= 5) player.resurrectUnlocked = true
-    if (player.character?.id === 'nox') player.noxReconstructionActive = state.players[index === 0 ? 1 : 0].noxMarks >= 8
     if (player.character?.id === 'ogro' && state.turn > 22 && !player.ogroPantryBonusApplied) {
       player.ogroPantryBonusApplied = true
       player.permanentBasicBonus = (player.permanentBasicBonus || 0) + 500
@@ -2279,27 +2288,34 @@ function resolveTurn() {
   })
   const a1 = resolveSelection(p1, state.selections.p1, p2)
   const a2 = resolveSelection(p2, state.selections.p2, p1)
+  if (p1.character?.id === 'haku' && a1.kind === 'haku-dance' && a2.id === 'basic') p1.hakuBladeDanceArmed = true
+  if (p2.character?.id === 'haku' && a2.kind === 'haku-dance' && a1.id === 'basic') p2.hakuBladeDanceArmed = true
   if (a1.id === 'basic' && a2.id === 'basic') {
-    const zero = p1.character?.id === 'zero' ? p1 : p2.character?.id === 'zero' ? p2 : null
-    const other = zero === p1 ? p2 : p1
-    if (zero && zero.uses.best > 0) {
-      zero.uses.best -= 1
-      other.zeroBestCancelled = true
-    }
+    if (p1.character?.id === 'zero') p2.zeroBestCancelled = true
+    if (p2.character?.id === 'zero') p1.zeroBestCancelled = true
   }
   p1.turnDamage = []
   p2.turnDamage = []
-  p1.turnTaken = []
-  p2.turnTaken = []
-  p1.turnHealed = []
-  p2.turnHealed = []
-  const events = [`— TURNO ${state.turn} —`]
+  p1.turnHealing = []
+  p2.turnHealing = []
+  p1.turnReceivedDamage = 0
+  p2.turnReceivedDamage = 0
+  p1.turnReceivedHealing = 0
+  p2.turnReceivedHealing = 0
+  p1.turnActionLabel = ''
+  p2.turnActionLabel = ''
+  const events = [`Turno ${state.turn}: ${p1.name} usou ${a1.name}${selectedAbilityId(state.selections.p1) !== a1.id ? ' (ação alterada).' : '.'}`, `Turno ${state.turn}: ${p2.name} usou ${a2.name}${selectedAbilityId(state.selections.p2) !== a2.id ? ' (ação alterada).' : '.'}`]
   const predatoryTriggers = new Set()
-  const drainBefore = [p1.drainAvailable, p2.drainAvailable]
   if (triggerPredatory(p1, p2, a1, a2, events)) predatoryTriggers.add(p1)
   if (triggerPredatory(p2, p1, a2, a1, events)) predatoryTriggers.add(p2)
   applyAction(p1, p2, a1, a2, events, predatoryTriggers); applyAction(p2, p1, a2, a1, events, predatoryTriggers)
-  applyKynPassives(p1, drainBefore[0], events); applyKynPassives(p2, drainBefore[1], events)
+  updateKynPassives(p1, a2, events)
+  updateKynPassives(p2, a1, events)
+  state.hpDeltas = state.players.map((player) => {
+    const damage = player.turnReceivedDamage || 0
+    const heal = player.turnReceivedHealing || 0
+    return damage || heal ? { damage, heal } : null
+  })
   state.lastTurnActions = [
     { player: p1.name, text: formatActionText(p1, state.selections.p1, a1) },
     { player: p2.name, text: formatActionText(p2, state.selections.p2, a2) },
@@ -2322,40 +2338,17 @@ function resolveTurn() {
   if (state.result) stopTurnTimer()
   else startTurnTimer()
   render()
-  showHpFeedback()
-}
-
-function blockedByHakuStance(player, opponent, ability, events) {
-  if (opponent.character?.id !== 'haku' || opponent.hakuDefenseTurns <= 0) return false
-  events.push(`${player.name} usou ${ability.name} e falhou.`)
-  state.battleNotice = 'Haku está em postura defensiva e não pode receber habilidades que a forcem a atacar, no momento.'
-  return true
-}
-
-function applyKynPassives(player, drainBefore, events) {
-  if (player.character?.id !== 'kyn') return
-  const gainedDrain = player.drainAvailable > drainBefore
-  player.noBasicTurns = player.receivedBasicThisTurn ? 0 : player.noBasicTurns + 1
-  player.receivedBasicThisTurn = false
-  player.noDrainTurns = gainedDrain ? 0 : player.noDrainTurns + 1
-  if (player.noBasicTurns >= 3) {
-    player.noBasicTurns = 0
-    player.drainAvailable += 100
-    events.push(`${player.name} ativou Paciência.`)
-  }
-  if (player.noDrainTurns >= 3) {
-    player.noDrainTurns = 0
-    player.drainAvailable += 200
-    player.hp = Math.max(1, player.hp - 150)
-    events.push(`${player.name} ativou Tributo.`)
-  }
 }
 
 function formatActionText(player, selectedId, ability) {
   const hits = (player.turnDamage || []).map((value) => `${value}💥`).join(' ')
-  if (selectedId === 'skip' || ability.kind === 'skip') return `${player.name}: Pulou o turno.`
-  if (player.blockedAbilityId && ability.id === 'basic' && state.turn < player.blockedAbilityUntilTurn) return `${player.name}: Pulou o turno.`
-  return hits ? `${player.name} usou ${ability.name}: ${hits}` : `${player.name} usou ${ability.name}.`
+  const heals = (player.turnHealing || []).map((value) => `+${value}💚`).join(' ')
+  const label = player.turnActionLabel || ability.name
+  const suffix = [hits, heals].filter(Boolean).join(' ')
+  if (selectedId === 'skip' || ability.kind === 'skip') return suffix ? `pulou turno ${suffix}` : 'pulou turno'
+  if (player.blockedAbilityId && ability.id === 'basic' && state.turn < player.blockedAbilityUntilTurn) return suffix ? `pulou turno ${suffix}` : 'pulou turno'
+  if (ability.kind === 'foresight' && ability.predictedId) return `${ability.name}: ${ability.predictedName || ability.predictedId}`
+  return suffix ? `${label} ${suffix}` : label
 }
 
 function shouldAnimateCedricBasic(player, ability) {
@@ -2369,14 +2362,27 @@ function resolveSelection(player, selectedId, opponent) {
   }
   const forcedBasic = player.forcedBasicTurns > 0 && state.turn >= player.forcedBasicStartsTurn
   if (selectedId === 'skip' && !forcedBasic) return { id: 'skip', name: 'Pulou turno', kind: 'skip' }
-  let ability = player.character.abilities.find((item) => item.id === selectedId) ?? player.character.abilities[0]
-  if (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id === 'basic' && !forcedBasic) {
+  const [abilityId, predictedId] = String(selectedId || '').split(':')
+  let ability = player.character.abilities.find((item) => item.id === abilityId) ?? player.character.abilities[0]
+  if (ability.kind === 'foresight' && predictedId) {
+    const predicted = opponent.character.abilities.find((item) => item.id === predictedId)
+    ability = { ...ability, predictedId, predictedName: predicted?.name || predictedId }
+  }
+  if (ability.kind === 'nox-pressure' && predictedId) {
+    const target = opponent.character.abilities.find((item) => item.id === predictedId)
+    ability = { ...ability, targetId: predictedId, targetName: target?.name || predictedId }
+  }
+  if (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id === 'basic') {
     return { id: 'skip', name: 'Pulou turno', kind: 'skip' }
   }
-  if (forcedBasic && ability.id !== 'basic') {
+  if (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id !== 'deep-cut') {
+    return { id: 'skip', name: 'Pulou turno', kind: 'skip' }
+  }
+  if (forcedBasic && ability.id !== 'basic' && player.hakuDefenseTurns <= 0) {
     ability = player.character.abilities.find((item) => item.id === 'basic') ?? ability
   }
   if (player.blockedAbilityId && ability.id === player.blockedAbilityId && state.turn < player.blockedAbilityUntilTurn) {
+    if (player.blockedAbilitySource === 'pressure') return { id: 'skip', name: 'Pulou turno', kind: 'skip' }
     ability = player.character.abilities.find((item) => item.id === 'basic') ?? ability
   }
   return ability
@@ -2384,20 +2390,16 @@ function resolveSelection(player, selectedId, opponent) {
 
 function getAbility(player, id) { return player.character.abilities.find((ability) => ability.id === id) ?? player.character.abilities[0] }
 
-function abilityNameById(player, id) {
-  return player.character.abilities.find((ability) => ability.id === id)?.name || 'Ataque básico'
-}
-
 function triggerPredatory(player, opponent, ability, opponentAbility, events) {
   const selectedPredatory = ability.kind === 'predatory'
   if ((!player.pendingPredatory && !selectedPredatory) || opponentAbility.id !== 'basic') return false
-  const recoveredHp = 180
-  player.hp += recoveredHp
-  player.turnHealed = [...(player.turnHealed || []), recoveredHp]
   player.pendingPredatory = false
+  player.turnActionLabel = 'Ativou Ataque Predatório'
   if (selectedPredatory) consume(player, ability)
   player.turnDamage = [...(player.turnDamage || []), 160]
-  dealDamage(opponent, 160, events, `${player.name} usou Ataque predatório e acertou: 160💥`)
+  dealDamage(opponent, 160, events, `${player.name} ativou o Ataque predatório e causou 160 de dano.`)
+  const recoveredHp = healPlayer(player, 180, events)
+  events.push(recoveredHp > 0 ? `${player.name} recuperou ${recoveredHp} HP.` : `${player.name} tentou recuperar 180 HP, mas já estava com o HP cheio.`)
   return true
 }
 
@@ -2411,27 +2413,21 @@ function trackCedricFrieza(target, ability, events) {
   if (target.friezaBasicHits >= 3) {
     target.friezaUses -= 1
     target.friezaBasicHits = 0
-    target.hp += 300
-    target.turnHealed = [...(target.turnHealed || []), 300]
-    events.push(`${target.name} ativou Frieza.`)
+    const recovered = healPlayer(target, 300, events)
+    events.push(`${target.name} ativou Frieza e recuperou ${recovered} HP.`)
   }
 }
 
 function trackVossRumination(target, ability, events) {
   if (target.character?.id !== 'voss') return
-  const kind = ability.id === 'basic' ? 'basic' : ability.kind === 'skip' ? null : 'ability'
-  if (!kind) {
-    target.ruminationHits = 0
-    target.ruminationLastKind = null
-    return
-  }
+  const kind = ability.id === 'basic' ? 'basic' : ability.kind === 'skip' ? 'skip' : 'ability'
   target.ruminationHits = target.ruminationLastKind === kind ? target.ruminationHits + 1 : 1
   target.ruminationLastKind = kind
   if (target.ruminationHits >= 3) {
     target.rage += 15
     target.ruminationHits = 0
     target.ruminationLastKind = null
-    events.push(`${target.name} ativou Ruminação.`)
+    events.push(`${target.name} ativou Ruminação e ganhou 15 de fúria.`)
   }
 }
 
@@ -2444,47 +2440,77 @@ function healPlayer(player, amount, events) {
   const before = player.hp
   player.hp = Math.min(player.maxHp, player.hp + amount)
   const healed = player.hp - before
-  if (healed > 0) player.turnHealed = [...(player.turnHealed || []), healed]
-  if (healed > 0 && player.harvestTurns > 0) player.harvestHealing += healed
-  if (healed > 0) mirrorNoxReconstruction(player, healed)
+  if (healed > 0) {
+    player.turnHealing = [...(player.turnHealing || []), healed]
+    player.turnReceivedHealing = (player.turnReceivedHealing || 0) + healed
+    recordOpponentHealing(player, healed, events)
+  }
   return healed
 }
 
-// Reconstrucao espelha a cura do alvo marcado sem reentrar em healPlayer.
-function mirrorNoxReconstruction(healedPlayer, amount) {
-  const nox = state.players?.find((item) => item !== healedPlayer && item.character?.id === 'nox' && item.noxReconstructionActive)
-  if (!nox) return
-  const before = nox.hp
-  nox.hp = Math.min(nox.maxHp, nox.hp + amount)
-  const gained = nox.hp - before
-  if (gained > 0) nox.turnHealed = [...(nox.turnHealed || []), gained]
+function recordOpponentHealing(healedPlayer, amount, events) {
+  state.players.forEach((player) => {
+    if (player === healedPlayer || player.character?.id !== 'kyn' || player.harvestTurns <= 0) return
+    player.harvestHealing += amount
+    events.push(`${player.name} registrou ${amount} de cura com Colheita.`)
+  })
+}
+
+function addKynDrain(player, amount, events, message, replace = false) {
+  if (player.character?.id !== 'kyn' || amount <= 0) return
+  player.drainAvailable = replace ? amount : player.drainAvailable + amount
+  player.drainGainedThisTurn = true
+  player.noDrainTurns = 0
+  if (message) events.push(message)
+}
+
+function updateKynPassives(player, opponentAbility, events) {
+  if (player.character?.id !== 'kyn') return
+  if (opponentAbility.id === 'basic') player.noBasicTurns = 0
+  else {
+    player.noBasicTurns += 1
+    if (player.noBasicTurns >= 3) {
+      addKynDrain(player, 100, events, `${player.name} ativou Paciência e ganhou 100 de Dreno.`)
+      player.noBasicTurns = 0
+    }
+  }
+  if (player.drainGainedThisTurn) return
+  player.noDrainTurns += 1
+  if (player.noDrainTurns >= 3) {
+    addKynDrain(player, 200, events, `${player.name} ativou Tributo e ganhou 200 de Dreno.`)
+    player.hp = Math.max(1, player.hp - 150)
+    player.noDrainTurns = 0
+  }
 }
 
 function receiveDamage(target, amount, events, message) {
+  if (target.nextTurnDodge && amount > 0) {
+    target.nextTurnDodge = false
+    target.brickDodges += 1
+    events.push(`${target.name} esquivou o ataque.`)
+    return false
+  }
   let damage = amount
   if (target.character?.id === 'haku' && target.hakuDefenseTurns > 0) damage = Math.floor(damage * .45)
   if (target.character?.id === 'ogro' && target.ogroRoarTurns > 0) damage = Math.floor(damage * .7)
   if (target.character?.id === 'kiro' && target.kiroReductionTurns > 0) damage = Math.floor(damage * .7)
   if (target.character?.id === 'damon' && target.resistanceStacks > 0) damage = Math.max(0, damage - target.resistanceStacks * 5)
+  if (target.character?.id === 'brick' && target.character?.id === 'brick' && target.resistanceStacks > 0) damage = Math.max(0, damage - target.resistanceStacks * 5)
   recordDamage(target, damage)
+  target.turnReceivedDamage = (target.turnReceivedDamage || 0) + damage
   target.hp = Math.max(0, target.hp - damage)
-  if (damage > 0) target.turnTaken = [...(target.turnTaken || []), damage]
-  if (target.character?.id === 'voss' && damage > 250) {
-    target.rage += 20
-    events.push(`${target.name} ativou Rancor.`)
-  }
   if (target.character?.id === 'damon') target.resistanceStacks = Math.floor((target.maxHp - target.hp) / 200)
   if (target.hp <= 0 && target.secondLifeArmed) {
     target.secondLifeArmed = false
     target.hp = 1
-    target.drainAvailable += 200
-    events.push(`${target.name} ativou Sobrevida.`)
+    addKynDrain(target, 200, events, `${target.name} ganhou 200 de Dreno com Sobrevida.`)
+    events.push(`${target.name} ativou Sobrevida e ficou com 1 HP.`)
   }
   if (target.hp <= 0 && target.character?.id === 'sany' && !target.sanyLastChanceUsed) {
     target.sanyLastChanceUsed = true
     target.hp = 1
     target.uses['lucky-attack'] += 1
-    events.push(`${target.name} ativou Última chance.`)
+    events.push(`${target.name} ativou Última chance e ganhou 1 uso de Ataque de sorte.`)
   }
   if (target.hp <= 0 && target.character?.id === 'damon' && target.damonBasicHitsReceived >= 5) {
     getDamonResurrection(target, events)
@@ -2494,17 +2520,19 @@ function receiveDamage(target, amount, events, message) {
 }
 
 function getDamonResurrection(target, events) {
-  if (target.character?.id !== 'damon' || !target.resurrectUnlocked || target.uses.resurrect <= 0) return false
+  if (target.character?.id !== 'damon' || !target.damonResurrectionArmed) return false
+  target.damonResurrectionArmed = false
   target.resurrectUnlocked = false
-  consume(target, getAbility(target, 'resurrect'))
-  target.hp = 500
-  target.basicDamageBonus += 60
-  events.push(`${target.name} ativou Ressuscitar.`)
+  target.turnActionLabel = 'Ativou Ressuscitar'
+  healPlayer(target, 500, events)
+  target.permanentBasicBonus = (target.permanentBasicBonus || 0) + 60
+  events.push(`${target.name} ressuscitou com 500 HP e ganhou +60 de dano básico permanente.`)
   return true
 }
 
 const zeroAttackValues = [45, 75, 120, 170, 265]
 const zeroExperienceThresholds = [0, 50, 130, 250, 340]
+const hakuAttackValues = [30, 60, 90, 120, 150]
 
 function updateZeroLevel(player) {
   if (player.character?.id !== 'zero') return
@@ -2516,13 +2544,40 @@ function addZeroExperience(player, amount, events) {
   const oldLevel = player.zeroLevel
   player.zeroExperience += amount
   updateZeroLevel(player)
-  if (player.zeroLevel > oldLevel) events.push(`${player.name} atingiu o nível ${player.zeroLevel}.`)
+  events.push(`${player.name} ganhou ${amount} de experiência.`)
+  if (player.zeroLevel > oldLevel) events.push(`${player.name} evoluiu para o nível ${player.zeroLevel}.`)
+}
+
+function addNoxMark(player, opponent, amount, events) {
+  if (player.character?.id !== 'nox' || !opponent || opponent.noxMarks >= 10) {
+    if (opponent?.noxMarks >= 10) player.noxMarkLocked = true
+    return 0
+  }
+  const beforeAppliedGroup = Math.floor((player.noxMarksApplied || 0) / 10)
+  const added = Math.min(amount, 10 - opponent.noxMarks)
+  opponent.noxMarks += added
+  player.noxMarksApplied += added
+  const afterAppliedGroup = Math.floor(player.noxMarksApplied / 10)
+  if (afterAppliedGroup > beforeAppliedGroup) player.noxPressureCharges += (afterAppliedGroup - beforeAppliedGroup) * 2
+  if (opponent.noxMarks >= 10) player.noxMarkLocked = true
+  if (events && added > 0) events.push(`${player.name} aplicou ${added} marca${added > 1 ? 's' : ''}.`)
+  return added
 }
 
 function getBasicDamage(player) {
   if (player.character?.id === 'zero') return zeroAttackValues[player.zeroLevel - 1] || 45
-  if (player.character?.id === 'haku') return [30, 60, 90, 120, 150][player.hakuBasicStep] || 30
+  if (player.character?.id === 'haku') return hakuAttackValues[player.hakuBasicStep] || 30
   return player.character.abilities.find((ability) => ability.id === 'basic')?.damage || 0
+}
+
+function nextHakuHit(player) {
+  const damage = hakuAttackValues[player.hakuBasicStep] || 30
+  player.hakuBasicStep = (player.hakuBasicStep + 1) % hakuAttackValues.length
+  return damage
+}
+
+function takeHakuHits(player, count) {
+  return Array.from({ length: count }, () => nextHakuHit(player))
 }
 
 function finishHakuBasic(player) {
@@ -2533,60 +2588,57 @@ function finishHakuBasic(player) {
 function applyAction(player, opponent, ability, opponentAbility, events, predatoryTriggers) {
   if (player.nextBasicBonus && state.turn > player.bonusExpiresTurn) player.nextBasicBonus = 0
   const predatoryReady = player.pendingPredatory && state.turn === player.predatoryExpiresTurn
-  if (player.pendingPredatory && state.turn >= player.predatoryExpiresTurn && !predatoryReady) { player.pendingPredatory = false; events.push(`${player.name} usou Ataque predatório e falhou.`) }
+  if (player.pendingPredatory && state.turn >= player.predatoryExpiresTurn && !predatoryReady) player.pendingPredatory = false
   if (player.basicDamageBonus && state.turn > player.basicDamageBonusExpiresTurn) player.basicDamageBonus = 0
   const forcedBasicThisTurn = player.forcedBasicTurns > 0 && state.turn >= player.forcedBasicStartsTurn
   if (player.blockedAbilityId && state.turn >= player.blockedAbilityUntilTurn) {
     player.blockedAbilityId = null
+    player.blockedAbilitySource = ''
     player.blockedAbilityUntilTurn = 0
   }
   if (predatoryTriggers.has(player)) return
   if (opponent.character?.id === 'sany' && opponent.sanyResearchArmed) {
-    const researchHit = ability.id === opponent.sanyResearchPrediction
-    if (researchHit) opponent.uses['lucky-attack'] += 1
-    events.push(`${opponent.name} usou Pesquisa e ${researchHit ? 'acertou' : 'errou'} (${abilityNameById(player, opponent.sanyResearchPrediction)}).`)
+    if (ability.id === opponent.sanyResearchPrediction) {
+      opponent.uses['lucky-attack'] += 1
+      events.push(`${opponent.name} acertou a Pesquisa e ganhou 1 uso de Ataque de sorte.`)
+    }
     opponent.sanyResearchArmed = false
     opponent.sanyResearchPrediction = ''
   }
   if (player.zeroBestCancelled) {
     player.zeroBestCancelled = false
+    player.turnDamage = [...(player.turnDamage || []), 0]
     addZeroExperience(opponent, 30, events)
-    events.push(`${opponent.name} ativou Sou o melhor!`)
+    events.push(`${player.name} teve o ataque básico anulado por Sou o melhor! e causou 0 de dano.`)
     return
   }
-  if (player.character?.id === 'kyn' && player.kynForesightArmed) {
-    const foresightHit = opponentAbility.id === player.kynForesightPrediction
-    if (foresightHit) player.drainAvailable += 125
-    events.push(`${player.name} usou Premonição e ${foresightHit ? 'acertou' : 'errou'} (${abilityNameById(opponent, player.kynForesightPrediction)}).`)
-    player.kynForesightArmed = false
-    player.kynForesightPrediction = ''
-  }
   if (player.character?.id === 'zero' && player.zeroAnalysisArmed) {
-    const analysisHit = opponentAbility.id !== 'basic' && opponentAbility.kind !== 'skip'
-    if (analysisHit) addZeroExperience(player, 30, events)
-    events.push(`${player.name} usou Análise e ${analysisHit ? 'acertou' : 'errou'} (${opponentAbility.name}).`)
+    if (ability.kind !== 'damage') addZeroExperience(player, 30, events)
     player.zeroAnalysisArmed = false
   }
-  if (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id === 'basic' && !forcedBasicThisTurn) return
+  if (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id === 'basic') return
   if (ability.kind === 'damage') {
-    let damage = (ability.id === 'basic' ? getBasicDamage(player) + (player.permanentBasicBonus || 0) : ability.damage) + player.nextBasicBonus + (forcedBasicThisTurn ? (player.forcedBasicBonus || 100) : 0) + (player.basicDamageBonus || 0)
+    const hakuHits = player.character?.id === 'haku' && ability.id === 'basic' ? takeHakuHits(player, player.hakuLastDanceActive ? 2 : 1) : []
+    const kynDrainDamage = player.character?.id === 'kyn' && ability.id === 'basic' ? player.drainAvailable : 0
+    const baseDamage = hakuHits.length ? hakuHits.reduce((sum, value) => sum + value, 0) : ability.id === 'basic' ? getBasicDamage(player) + (player.permanentBasicBonus || 0) : ability.damage
+    const bonusParts = [player.nextBasicBonus, forcedBasicThisTurn ? (player.forcedBasicBonus || 100) : 0, player.basicDamageBonus || 0, kynDrainDamage].filter((value) => value > 0)
+    let damage = baseDamage + bonusParts.reduce((sum, value) => sum + value, 0)
     if (player.character?.id === 'kiro' && ability.id === 'basic') damage += player.kiroStrengthBonus
     if (player.character?.id === 'sany' && ability.id === 'basic' && opponent.hp > player.hp) damage += 80
     if (player.character?.id === 'sany' && player.sanyAmplificationUntilTurn >= state.turn) damage = Math.floor(damage * 1.25)
     if (player.character?.id === 'damon' && player.damonBasicHitsReceived >= 0) damage += player.damonBasicBonus || 0
-    if (player.character?.id === 'kyn') damage += player.drainAvailable
-    const dodgeTarget = opponent.character?.id === 'brick' && opponent.nextTurnDodge && ability.id === 'basic'
+    const dodgeTarget = opponent.character?.id === 'brick' && opponent.nextTurnDodge
     if (dodgeTarget) {
       opponent.nextTurnDodge = false
       opponent.brickDodges += 1
-      events.push(`${opponent.name} ativou Esquiva.`)
+      events.push(`${opponent.name} esquivou o ataque.`)
       trackVossRumination(opponent, ability, events)
       return
     }
     let markBonus = 0
     player.nextBasicBonus = 0
     player.damonBasicBonus = 0
-    if (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && !forcedBasicThisTurn) return
+    if (player.character?.id === 'haku' && player.hakuDefenseTurns > 0) return
     const isCedricBasic = player.name === 'Cedric' && ability.id === 'basic'
     const hasMarkedDebuff = opponent.markActive && opponent.markSource === 'cedric'
     if (isCedricBasic && hasMarkedDebuff) {
@@ -2596,115 +2648,111 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
         opponent.markActive = false
         opponent.markBasicHits = 0
         opponent.markSource = null
-        events.push(`${player.name} ativou Marcar alvo: 270💥`)
+        events.push(`${player.name} detonou a marca em ${opponent.name} e causou 270 de dano extra.`)
       } else {
-        events.push(`${player.name} acumulou Marcar alvo: ${opponent.markBasicHits}/2.`)
+        events.push(`${player.name} acumulou marca em ${opponent.name}: ${opponent.markBasicHits}/2.`)
       }
     }
     const luckBonus = player.character?.id === 'kiro' && ability.id === 'basic' && Math.random() < .3 ? 100 : 0
-    player.turnDamage = [...(player.turnDamage || []), damage, ...(markBonus ? [markBonus] : []), ...(luckBonus ? [luckBonus] : [])]
+    const displayedDamage = hakuHits.length ? hakuHits : ability.id === 'basic' ? [baseDamage, ...bonusParts] : [damage]
+    player.turnDamage = [...(player.turnDamage || []), ...displayedDamage, ...(markBonus ? [markBonus] : []), ...(luckBonus ? [luckBonus] : [])]
     const totalDamage = damage + markBonus
     if (ability.uses !== undefined) consume(player, ability)
-    const landed = dealDamage(opponent, totalDamage + luckBonus, events, `${player.name} usou ${ability.name}: ${totalDamage + luckBonus}💥`)
-    if (landed && player.character?.id === 'brick') countBrickBlow(player, ability.damageType)
-    if (luckBonus) events.push(`${player.name} ativou Sorte.`)
+    const hit = dealDamage(opponent, totalDamage + luckBonus, events, `${player.name} causou ${totalDamage + luckBonus} de dano.`)
+    if (hit && opponent.character?.id === 'brick') {
+      if (ability.damageType === 'punch') opponent.brickPunchesReceived += 1
+      if (ability.damageType === 'kick') opponent.brickKicksReceived += 1
+    }
+    if (luckBonus) events.push(`${player.name} ativou Sorte e causou 100 de dano extra.`)
     if (player.character?.id === 'kiro' && ability.id === 'basic' && player.kiroDoubleArmed) {
       player.kiroDoubleArmed = false
       player.turnDamage.push(damage)
-      dealDamage(opponent, damage, events, `${player.name} ativou Ataque duplo: ${damage}💥`)
+      dealDamage(opponent, damage, events, `${player.name} repetiu o ataque com Ataque duplo e causou ${damage} de dano.`)
     }
     if (player.character?.id === 'kiro' && ability.id === 'basic') player.kiroStrengthBonus = 0
     if (player.character?.id === 'zero' && opponent.hp < player.hp) healPlayer(player, Math.floor(totalDamage * .2), events)
-    finishHakuBasic(player)
-    if (player.character?.id === 'haku' && player.hakuLastDanceActive) {
-      const resonanceDamage = getBasicDamage(player)
-      player.turnDamage.push(resonanceDamage)
-      dealDamage(opponent, resonanceDamage, events, `${player.name} ativou Última Dança: ${resonanceDamage}💥`)
-    }
     if (opponent.character?.id === 'haku' && opponent.hakuBladeDanceArmed && ability.id === 'basic') {
       opponent.hakuBladeDanceArmed = false
-      const danceDamage = getBasicDamage(opponent)
-      opponent.turnDamage = [...(opponent.turnDamage || []), danceDamage, danceDamage]
-      dealDamage(player, danceDamage * 2, events, `${opponent.name} usou Dança da lâmina e acertou: ${danceDamage * 2}💥`)
+      opponent.hakuBladeDanceResolvedTurn = state.turn
+      const danceHits = takeHakuHits(opponent, opponent.hakuLastDanceActive ? 4 : 2)
+      opponent.turnDamage = [...(opponent.turnDamage || []), ...danceHits]
+      const danceDamage = danceHits.reduce((sum, value) => sum + value, 0)
+      dealDamage(player, danceDamage, events, `${opponent.name} executou Dança da lâmina e causou ${danceHits.map((value) => `${value} de dano`).join(' + ')}.`)
     }
-    if (player.character?.id === 'kyn' && totalDamage > 0) {
-      const healed = Math.floor(totalDamage * .75)
+    if (player.character?.id === 'kyn' && kynDrainDamage > 0 && hit) {
+      const healed = Math.floor(kynDrainDamage * .75)
       healPlayer(player, healed, events)
       player.drainAvailable = 0
+      player.drainGainedThisTurn = true
+      player.noDrainTurns = 0
     }
     if (opponent.character?.id === 'damon' && ability.id === 'basic') {
       opponent.damonBasicHitsReceived += 1
       if (opponent.damonBasicHitsReceived >= 5) opponent.resurrectUnlocked = true
     }
-    if (ability.id === 'basic') opponent.receivedBasicThisTurn = true
     if (opponent.character?.id === 'brick' && ability.id === 'basic' && Math.random() < .5) {
       player.hp = Math.max(0, player.hp - 25)
       player.turnDamage = [...(opponent.turnDamage || []), 25]
-      countBrickBlow(opponent, 'punch')
-      events.push(`${opponent.name} ativou Contra-golpe.`)
+      events.push(`${opponent.name} ativou Contra-Golpe e acertou um Soco adicional.`)
     }
     trackCedricFrieza(opponent, ability, events)
-  } else if (ability.kind === 'predatory') { player.pendingPredatory = true; player.predatoryExpiresTurn = state.turn + 1; consume(player, ability); events.push(`${player.name} usou Ataque predatório.`) }
-  else if (ability.kind === 'analysis') { player.zeroAnalysisArmed = true; events.push(`${player.name} usou Análise.`) }
-  else if (ability.kind === 'zero-evolution' || ability.kind === 'zero-survival') { events.push(`${player.name} ativou ${ability.name}.`) }
-  else if (ability.kind === 'haku-last-dance' || ability.kind === 'haku-concentration') { events.push(`${player.name} ativou ${ability.name}.`) }
-  else if (ability.kind === 'zero-best') { consume(player, ability); events.push(`${player.name} ativou Sou o melhor!`) }
-  else if (ability.kind === 'haku-defense') { player.hakuDefenseTurns = 3; consume(player, ability); events.push(`${player.name} usou Postura Defensiva.`) }
-  else if (ability.kind === 'haku-dance') { player.hakuBladeDanceArmed = true; events.push(`${player.name} usou Dança da lâmina.`) }
-  else if (ability.kind === 'haku-deep-cut') { opponent.hakuDeepCutTurns = 5; consume(player, ability); events.push(`${player.name} usou Corte Profundo.`) }
+  } else if (ability.kind === 'predatory') { player.pendingPredatory = true; player.predatoryExpiresTurn = state.turn + 1; consume(player, ability); events.push(`${player.name} armou o Ataque predatório para o próximo turno.`) }
+  else if (ability.kind === 'analysis') { player.zeroAnalysisArmed = true; events.push(`${player.name} analisará a próxima habilidade.`) }
+  else if (ability.kind === 'zero-evolution' || ability.kind === 'zero-survival' || ability.kind === 'haku-last-dance' || ability.kind === 'haku-concentration') { events.push(`${player.name} manteve sua passiva ativa.`) }
+  else if (ability.kind === 'zero-best') { consume(player, ability); events.push(`${player.name} preparou Sou o melhor!`) }
+  else if (ability.kind === 'haku-defense') { player.hakuDefenseTurns = 3; consume(player, ability); events.push(`${player.name} entrou em Postura Defensiva.`) }
+  else if (ability.kind === 'haku-dance') { if (player.hakuBladeDanceResolvedTurn !== state.turn) player.hakuBladeDanceArmed = true; events.push(`${player.name} preparou Dança da lâmina.`) }
+  else if (ability.kind === 'haku-deep-cut') { opponent.hakuDeepCutTurns = 5; consume(player, ability); events.push(`${player.name} aplicou Corte Profundo.`) }
   else if (ability.kind === 'mark') {
     opponent.markActive = true
     opponent.markBasicHits = 0
     opponent.markSource = 'cedric'
     consume(player, ability)
-    events.push(`${player.name} usou Marcar alvo.`)
+    events.push(`${player.name} marcou ${opponent.name}.`)
   }
-  else if (ability.kind === 'execute') { consume(player, ability); if (opponent.hp <= opponent.maxHp * 0.25) { opponent.hp = 0; events.push(`${player.name} usou Execução! e acertou.`) } else events.push(`${player.name} usou Execução! e falhou.`) }
-  else if (ability.kind === 'rage') { player.rage += state.turn > 10 ? 20 : 10; events.push(`${player.name} usou Aumentar fúria.`) }
-  else if (ability.kind === 'impulse') { player.rage -= 55; player.nextBasicBonus = 250; player.bonusExpiresTurn = state.turn + 1; events.push(`${player.name} usou Impulso.`) }
-  else if (ability.kind === 'heal') { player.rage -= 30; player.hp += 250; player.turnHealed = [...(player.turnHealed || []), 250]; events.push(`${player.name} usou Cura.`) }
-  else if (ability.kind === 'sacrifice') { player.hp = Math.max(1, player.hp - 200); player.damonBasicBonus = 200; player.sacrificeActive = true; events.push(`${player.name} usou Sacrifício.`) }
-  else if (ability.kind === 'resurrect') { if (player.resurrectUnlocked) events.push(`${player.name} usou Ressuscitar.`); else events.push(`${player.name} usou Ressuscitar e falhou.`) }
-  else if (ability.kind === 'taunt') { if (blockedByHakuStance(player, opponent, ability, events)) { /* bloqueado pela Postura Defensiva */ } else { opponent.forcedBasicTurns = 1; opponent.forcedBasicStartsTurn = state.turn + 1; opponent.forcedBasicBonus = ability.tauntBonus || 70; opponent.forcedBasicSource = ability.tauntBonus === 150 ? 'provoke' : 'pain-hunger'; events.push(`${player.name} usou ${ability.name}.`) } }
-  else if (ability.kind === 'broken-limit') { if (state.turn > 11) { const damage = Math.floor((player.damageHistory || []).reduce((sum, value) => sum + value, 0) * .45); dealDamage(opponent, damage, events, `${player.name} usou Limite Rompido -> ${damage}💥`); player.brokenLimitReady = false; consume(player, ability) } }
-  else if (ability.kind === 'resistance') { events.push(`${player.name} ativou Resistência.`) }
-  else if (ability.kind === 'drain') { if (player.drainAvailable > 0) { const damage = player.drainAvailable; player.drainAvailable = 0; dealDamage(opponent, damage, events, `${player.name} usou Dreno -> ${damage}💥`); healPlayer(player, Math.floor(damage * .75), events) } }
-  else if (ability.kind === 'foresight') { player.kynForesightArmed = true; player.kynForesightPrediction = player.pendingTargetAbilityId || 'basic'; player.pendingTargetAbilityId = ''; events.push(`${player.name} usou Premonição.`) }
-  else if (ability.kind === 'harvest') { player.harvestTurns = 4; player.harvestHealing = 0; consume(player, ability); events.push(`${player.name} usou Colheita.`) }
-  else if (ability.kind === 'second-life') { player.secondLifeArmed = true; consume(player, ability); events.push(`${player.name} usou Sobrevida.`) }
-  else if (ability.kind === 'patience') { player.drainAvailable += 100; events.push(`${player.name} usou Paciência.`) }
-  else if (ability.kind === 'tribute') { player.drainAvailable += 200; player.hp = Math.max(1, player.hp - 150); events.push(`${player.name} usou Tributo.`) }
-  else if (ability.kind === 'nox-mark') { if (!player.noxMarkLocked) { opponent.noxMarks += 1; player.noxMarksApplied += 1; if (player.noxMarksApplied % 5 === 0) player.noxPressureCharges += 1; if (opponent.noxMarks >= 10) player.noxMarkLocked = true; events.push(`${player.name} usou Marcado.`) } }
-  else if (ability.kind === 'nox-trigger') { const damage = opponent.noxMarks * 60; opponent.noxMarks = 0; player.noxMarkLocked = false; dealDamage(opponent, damage, events, `${player.name} usou Acionador -> ${damage}💥`) }
-  else if (ability.kind === 'nox-pressure') { if (player.noxPressureCharges > 0) { player.noxPressureCharges -= 1; opponent.blockedAbilityId = 'basic'; opponent.blockedAbilityUntilTurn = state.turn + 2; events.push(`${player.name} usou Pressão.`) } }
+  else if (ability.kind === 'execute') { consume(player, ability); if (opponent.hp <= opponent.maxHp * 0.25) { opponent.hp = 0; events.push(`${player.name} executou ${opponent.name}.`) } else events.push('Execução! falhou: o alvo ainda está acima de 25% de HP.') }
+  else if (ability.kind === 'rage') { player.rage += state.turn > 10 ? 20 : 10; events.push(`${player.name} ganhou ${state.turn > 10 ? 20 : 10} de fúria.`) }
+  else if (ability.kind === 'impulse') { player.rage -= 55; player.nextBasicBonus = 250; player.bonusExpiresTurn = state.turn + 1; events.push(`${player.name} concentrou +250 de dano no próximo ataque básico.`) }
+  else if (ability.kind === 'heal') { player.rage -= 30; const recovered = healPlayer(player, 250, events); events.push(`${player.name} recuperou ${recovered} HP. HP atual: ${player.hp}.`) }
+  else if (ability.kind === 'sacrifice') { player.hp = Math.max(1, player.hp - 200); player.damonBasicBonus = 200; player.sacrificeActive = true; events.push(`${player.name} sacrificou 200 HP para ganhar +200 no próximo ataque básico.`) }
+  else if (ability.kind === 'resurrect') { if (player.resurrectUnlocked) { player.damonResurrectionArmed = true; consume(player, ability); events.push(`${player.name} ativou Ressuscitar. Se morrer, renascerá com 500 HP.`) } else events.push(`${player.name} ainda não recebeu 5 ataques básicos.`) }
+  else if (ability.kind === 'taunt') { opponent.forcedBasicTurns = 1; opponent.forcedBasicStartsTurn = state.turn + 1; opponent.forcedBasicBonus = ability.tauntBonus || 70; opponent.forcedBasicSource = ability.tauntBonus === 150 ? 'provoke' : 'pain-hunger'; events.push(`${player.name} provocou ${opponent.name}.`) }
+  else if (ability.kind === 'broken-limit') { if (state.turn > 11) { const damage = Math.floor((player.damageHistory || []).reduce((sum, value) => sum + value, 0) * .45); dealDamage(opponent, damage, events, `${player.name} rompeu o limite e causou ${damage} de dano.`); player.brokenLimitReady = false; consume(player, ability) } }
+  else if (ability.kind === 'resistance') { player.resistanceStacks += 1; events.push(`${player.name} fortaleceu sua Resistência.`) }
+  else if (ability.kind === 'foresight') { if (ability.predictedId === opponentAbility.id) addKynDrain(player, 125, events, `${player.name} acertou Premonição e carregou 125 de Dreno.`, true); else events.push(`${player.name} errou Premonição.`) }
+  else if (ability.kind === 'harvest') { player.harvestTurns = 4; player.harvestHealing = 0; consume(player, ability); events.push(`${player.name} ativou Colheita.`) }
+  else if (ability.kind === 'second-life') { player.secondLifeArmed = true; consume(player, ability); events.push(`${player.name} preparou Sobrevida.`) }
+  else if (ability.kind === 'patience' || ability.kind === 'tribute') { events.push(`${player.name} manteve sua passiva ativa.`) }
+  else if (ability.kind === 'nox-mark') { if (!player.noxMarkLocked) addNoxMark(player, opponent, 1, events); else events.push(`${player.name} atingiu o limite de 10 marcas e precisa usar Acionador.`) }
+  else if (ability.kind === 'nox-trigger') { const damage = opponent.noxMarks * 60; opponent.noxMarks = 0; player.noxMarkLocked = false; player.turnDamage = [...(player.turnDamage || []), damage]; dealDamage(opponent, damage, events, `${player.name} acionou as marcas e causou ${damage} de dano.`) }
+  else if (ability.kind === 'nox-pressure') { if (player.noxPressureCharges > 0 && ability.targetId) { player.noxPressureCharges -= 1; opponent.blockedAbilityId = ability.targetId; opponent.blockedAbilitySource = 'pressure'; opponent.blockedAbilityUntilTurn = state.turn + 2; events.push(`${player.name} ativou Pressão e bloqueou ${ability.targetName || ability.targetId} de ${opponent.name} por 1 turno.`) } }
   else if (ability.kind === 'nox-reconstruction') { player.noxReconstructionActive = opponent.noxMarks >= 8; events.push(`${player.name} ativou Reconstrução.`) }
-  else if (ability.kind === 'nox-progression') { if (state.turn % 5 === 0) opponent.noxMarks += 1; events.push(`${player.name} ativou Progressão.`) }
-  else if (ability.kind === 'counter') { events.push(`${player.name} ativou Contra-golpe.`) }
-  else if (ability.kind === 'retaliation') { if (isRetaliationReady(player)) { dealDamage(opponent, 700, events, `${player.name} usou Retaliação -> 700💥`); player.uses = Object.fromEntries(player.character.abilities.filter((item) => item.uses !== undefined).map((item) => [item.id, item.uses])); player.brickDodges = 0; player.brickPunchesLanded = 0; player.brickKicksLanded = 0 } }
-  else if (ability.kind === 'dodge') { player.nextTurnDodge = true; consume(player, ability); events.push(`${player.name} usou Esquiva.`) }
-  else if (ability.kind === 'bindings') { if (blockedByHakuStance(player, opponent, ability, events)) { /* bloqueado pela Postura Defensiva */ } else { opponent.forcedBasicTurns = 2; opponent.forcedBasicStartsTurn = state.turn + 1; opponent.basicDamageBonus = 100; opponent.basicDamageBonusExpiresTurn = state.turn + 3; consume(player, ability); events.push(`${player.name} usou Amarras.`) } }
-  else if (ability.kind === 'deny') { player.rage -= 25; const candidate = opponent.character.abilities.find((item) => item.id === player.pendingTargetAbilityId && item.id !== 'basic' && item.kind !== 'rage') || opponent.character.abilities.find((item) => item.id !== 'basic' && item.kind !== 'rage'); player.pendingTargetAbilityId = ''; if (candidate) { opponent.blockedAbilityId = candidate.id; opponent.blockedAbilityUntilTurn = state.turn + 3; events.push(`${player.name} usou Negação -> ${candidate.name}`) } else { events.push(`${player.name} usou Negação e falhou.`) } }
-  else if (ability.kind === 'ogro-grab') { opponent.ogroGrabbedTurns = 5; player.ogroGrabActive = true; consume(player, ability); events.push(`${player.name} usou Pego pelo Pescoço.`) }
-  else if (ability.kind === 'ogro-squeeze') { if (player.ogroGrabActive) dealDamage(opponent, 50, events, `${player.name} usou Apertar: 50💥`) }
-  else if (ability.kind === 'ogro-release') { player.ogroGrabActive = false; opponent.ogroGrabbedTurns = 0; opponent.ogroForcedAbilityId = null; events.push(`${player.name} usou Soltar.`) }
-  else if (ability.kind === 'ogro-kick') { opponent.forcedSkipTurns = 1; opponent.forcedSkipReason = 'kick'; consume(player, ability); events.push(`${player.name} usou Chutar.`) }
-  else if (ability.kind === 'ogro-roar') { player.ogroRoarTurns = 2; consume(player, ability); events.push(`${player.name} usou Rugido.`) }
-  else if (ability.kind === 'ogro-throw') { opponent.forcedRandomTurns = 1; consume(player, ability); events.push(`${player.name} usou Jogar para o Alto.`) }
-  else if (ability.kind === 'kiro-reduction') { player.kiroReductionTurns = 2; consume(player, ability); events.push(`${player.name} usou Redução de dano.`) }
-  else if (ability.kind === 'kiro-strengthen') { player.kiroStrengthBonus += 100; consume(player, ability); events.push(`${player.name} usou Fortalecer.`) }
-  else if (ability.kind === 'kiro-disrupt') { opponent.forcedSkipTurns = 1; opponent.forcedSkipReason = 'disrupt'; consume(player, ability); events.push(`${player.name} usou Atrapalhar.`) }
-  else if (ability.kind === 'kiro-double') { player.kiroDoubleArmed = true; consume(player, ability); events.push(`${player.name} usou Ataque duplo.`) }
-  else if (ability.kind === 'kiro-luck' || ability.kind === 'sany-courage' || ability.kind === 'sany-last-chance') { events.push(`${player.name} ativou ${ability.name}.`) }
-  else if (ability.kind === 'sany-lucky') { const damage = Math.floor(200 + Math.random() * 451); const amplified = player.sanyAmplificationUntilTurn >= state.turn ? Math.floor(damage * 1.25) : damage; player.turnDamage = [...(player.turnDamage || []), amplified]; consume(player, ability); dealDamage(opponent, amplified, events, `${player.name} usou Ataque de sorte -> ${amplified}💥`) }
-  else if (ability.kind === 'sany-amplify') { player.sanyAmplificationUntilTurn = state.turn + 1; consume(player, ability); events.push(`${player.name} usou Amplificação.`) }
-  else if (ability.kind === 'sany-research') { player.sanyResearchArmed = true; player.sanyResearchPrediction = player.pendingTargetAbilityId || 'basic'; player.pendingTargetAbilityId = ''; consume(player, ability); events.push(`${player.name} usou Pesquisa.`) }
-  else if (ability.kind === 'skip') { events.push(`${player.name}: Pulou o turno.`); if (player.character?.id === 'haku') { healPlayer(player, 50, events); events.push(`${player.name} ativou Concentração.`) } }
+  else if (ability.kind === 'nox-progression') { if (state.turn % 5 === 0) opponent.noxMarks += 1; events.push(`${player.name} verificou Progressão.`) }
+  else if (ability.kind === 'counter') { events.push(`${player.name} preparou Contra-Golpe.`) }
+  else if (ability.kind === 'retaliation') { if (player.brickDodges >= 2 && player.brickPunchesReceived >= 6 && player.brickKicksReceived >= 2) { dealDamage(opponent, 700, events, `${player.name} ativou Retaliação e causou 700 de dano.`); player.uses = Object.fromEntries(player.character.abilities.filter((item) => item.uses !== undefined).map((item) => [item.id, item.uses])); player.brickDodges = 0; player.brickPunchesReceived = 0; player.brickKicksReceived = 0 } }
+  else if (ability.kind === 'dodge') { player.nextTurnDodge = true; consume(player, ability); events.push(`${player.name} preparou uma Esquiva.`) }
+  else if (ability.kind === 'bindings') { opponent.forcedBasicTurns = 2; opponent.forcedBasicStartsTurn = state.turn + 1; opponent.basicDamageBonus = 100; opponent.basicDamageBonusExpiresTurn = state.turn + 3; consume(player, ability); events.push(`${player.name} amarrou ${opponent.name}: ele será forçado a usar 2 ataques básicos nos próximos 2 turnos e receberá +100 em cada um.`) }
+  else if (ability.kind === 'deny') { player.rage -= 25; const candidate = opponent.character.abilities.find((item) => item.id === state.denyTargetAbilityId && item.id !== 'basic' && item.kind !== 'rage') || opponent.character.abilities.find((item) => item.id !== 'basic' && item.kind !== 'rage'); if (candidate) { opponent.blockedAbilityId = candidate.id; opponent.blockedAbilitySource = 'denial'; opponent.blockedAbilityUntilTurn = state.turn + 3; events.push(`${player.name} negou ${candidate.name} de ${opponent.name} pelos próximos 2 turnos.`) } else { events.push(`${player.name} tentou negar, mas ${opponent.name} não tinha habilidade ativa para bloquear.`) } state.denyTargetAbilityId = '' }
+  else if (ability.kind === 'ogro-grab') { opponent.ogroGrabbedTurns = 5; player.ogroGrabActive = true; consume(player, ability); events.push(`${player.name} agarrou ${opponent.name} pelo pescoço.`) }
+  else if (ability.kind === 'ogro-squeeze') { if (player.ogroGrabActive) dealDamage(opponent, 50, events, `${player.name} apertou ${opponent.name} e causou 50 de dano.`) }
+  else if (ability.kind === 'ogro-release') { player.ogroGrabActive = false; opponent.ogroGrabbedTurns = 0; opponent.ogroForcedAbilityId = null; events.push(`${player.name} soltou ${opponent.name}.`) }
+  else if (ability.kind === 'ogro-kick') { opponent.forcedSkipTurns = 1; opponent.forcedSkipReason = 'kick'; consume(player, ability); events.push(`${player.name} chutou ${opponent.name} para fora da arena.`) }
+  else if (ability.kind === 'ogro-roar') { player.ogroRoarTurns = 2; consume(player, ability); events.push(`${player.name} rugiu e reduziu o dano recebido.`) }
+  else if (ability.kind === 'ogro-throw') { opponent.forcedRandomTurns = 1; consume(player, ability); events.push(`${player.name} jogou ${opponent.name} para o alto.`) }
+  else if (ability.kind === 'kiro-reduction') { player.kiroReductionTurns = 2; consume(player, ability); events.push(`${player.name} ativou Redução de dano.`) }
+  else if (ability.kind === 'kiro-strengthen') { player.kiroStrengthBonus += 100; consume(player, ability); events.push(`${player.name} fortaleceu o próximo ataque básico.`) }
+  else if (ability.kind === 'kiro-disrupt') { opponent.forcedSkipTurns = 1; opponent.forcedSkipReason = 'disrupt'; consume(player, ability); events.push(`${player.name} atrapalhou ${opponent.name}.`) }
+  else if (ability.kind === 'kiro-double') { player.kiroDoubleArmed = true; consume(player, ability); events.push(`${player.name} preparou Ataque duplo.`) }
+  else if (ability.kind === 'sany-lucky') { const damage = Math.floor(200 + Math.random() * 451); const amplified = player.sanyAmplificationUntilTurn >= state.turn ? Math.floor(damage * 1.25) : damage; player.turnDamage = [...(player.turnDamage || []), amplified]; consume(player, ability); dealDamage(opponent, amplified, events, `${player.name} usou Ataque de sorte e causou ${amplified} de dano.`) }
+  else if (ability.kind === 'sany-amplify') { player.sanyAmplificationUntilTurn = state.turn + 1; consume(player, ability); events.push(`${player.name} ativou Amplificação.`) }
+  else if (ability.kind === 'sany-research') { player.sanyResearchArmed = true; player.sanyResearchPrediction = randomAbilityId(opponent, player); consume(player, ability); events.push(`${player.name} iniciou Pesquisa.`) }
+  else if (ability.kind === 'skip') { const recovered = player.character?.id === 'haku' ? healPlayer(player, 50, events) : 0; events.push(recovered > 0 ? `${player.name} pulou turno e ativou Concentração, recuperando ${recovered} HP.` : `${player.name} pulou turno.`) }
   trackVossRumination(opponent, ability, events)
   if (ability.kind !== 'damage') trackCedricFrieza(opponent, ability, events)
   if (player.harvestTurns > 0) {
     player.harvestTurns -= 1
     if (player.harvestTurns === 0) {
-      player.drainAvailable += player.harvestHealing
+      addKynDrain(player, player.harvestHealing, events, player.harvestHealing > 0 ? `${player.name} converteu ${player.harvestHealing} de cura em Dreno com Colheita.` : '')
       player.harvestHealing = 0
     }
   }
@@ -2712,7 +2760,7 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     player.forcedBasicTurns -= 1
     if (player.forcedBasicTurns <= 0) player.forcedBasicSource = ''
   }
-  if (player.hakuDefenseTurns > 0) player.hakuDefenseTurns -= 1
+  if (player.hakuDefenseTurns > 0 && ability.kind !== 'haku-defense') player.hakuDefenseTurns -= 1
   if (player.hakuDeepCutTurns > 0) player.hakuDeepCutTurns -= 1
   player.hakuLastDanceActive = player.character?.id === 'haku' && player.hp < player.maxHp * .55
   if (player.ogroGrabbedTurns > 0) player.ogroGrabbedTurns -= 1
@@ -2729,7 +2777,7 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     player.uses['lucky-attack'] += 1
     player.sanyLuckyEarnedTurn = state.turn
   }
-  if (ability.kind !== 'damage' && ability.kind !== 'mark') player.markBasicHits = 0
+  if (player.character?.id === 'cedric' && ability.id !== 'basic' && opponent.markActive && opponent.markSource === 'cedric') opponent.markBasicHits = 0
 }
 
 function consume(player, ability) { if (ability.uses !== undefined) player.uses[ability.id] -= 1 }

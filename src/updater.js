@@ -1,12 +1,11 @@
-import { Capacitor, registerPlugin } from '@capacitor/core'
+import { registerPlugin } from '@capacitor/core'
 
-const APP_DOMAIN = 'https://leetarena.tech'
-const UPDATE_MANIFEST_URL = `${APP_DOMAIN}/updates/latest.json`
-const WEB_MANIFEST_URL = `${APP_DOMAIN}/updates/web.json`
+const UPDATE_MANIFEST_URL = 'https://leetarena.zorobot.shop/updates/latest.json'
+const WEB_UPDATE_MANIFEST_URL = 'https://leetarena.tech/updates/web.json'
 const ApkUpdater = registerPlugin('ApkUpdater')
 
 function getPlugin() {
-  return Capacitor.isNativePlatform() ? ApkUpdater : null
+  return window.Capacitor?.isNativePlatform?.() ? ApkUpdater : null
 }
 
 export async function getInstalledVersion() {
@@ -25,16 +24,18 @@ export async function checkForUpdate() {
 
   let manifest
   try {
-    manifest = await plugin.getUpdateManifest({ url: UPDATE_MANIFEST_URL })
-  } catch (err) {
-    return { available: false, error: `Falha na conexão: ${err?.message || 'não foi possível acessar o servidor'}` }
+    const response = await fetch(UPDATE_MANIFEST_URL, { cache: 'no-store' })
+    if (!response.ok) return { available: false }
+    manifest = await response.json()
+  } catch {
+    return { available: false }
   }
 
   let current
   try {
     current = await plugin.getVersionInfo()
   } catch {
-    return { available: false, error: 'Não foi possível ler a versão instalada.' }
+    return { available: false }
   }
 
   const available = Number(manifest.versionCode) > Number(current.versionCode)
@@ -42,30 +43,48 @@ export async function checkForUpdate() {
 }
 
 export async function checkWebUpdate() {
-  const plugin = getPlugin()
-  if (!plugin) return { available: false }
-
-  let manifest
   try {
-    manifest = await plugin.getUpdateManifest({ url: WEB_MANIFEST_URL })
-  } catch (err) {
-    return { available: false, error: `Falha na conexão: ${err?.message || 'servidor indisponível'}` }
+    const response = await fetch(WEB_UPDATE_MANIFEST_URL, { cache: 'no-store' })
+    if (!response.ok) return { available: false }
+    const manifest = await response.json()
+    const current = Number(localStorage.getItem('leet-web-version') || '0')
+    return {
+      available: Number(manifest.versionCode) > current,
+      manifest,
+      currentVersionName: manifest.versionName,
+    }
+  } catch (error) {
+    return { available: false, error: error.message || 'Falha ao verificar a atualização web.' }
   }
-
-  let current
-  try {
-    current = await plugin.getWebVersion()
-  } catch {
-    return { available: false }
-  }
-
-  return { available: Number(manifest.versionCode) > Number(current.webVersion), manifest }
 }
 
 export async function installWebUpdate(manifest) {
-  const plugin = getPlugin()
-  if (!plugin) throw new Error('Atualização disponível apenas no aplicativo instalado.')
-  await plugin.installWebUpdate({ url: manifest.downloadUrl, version: Number(manifest.versionCode) })
+  if (!manifest?.downloadUrl) {
+    throw new Error('Manifesto da atualização web sem URL de download.')
+  }
+  const nextVersion = Number(manifest.versionCode || 0)
+  if (!Number.isFinite(nextVersion)) {
+    throw new Error('Versão da atualização web inválida.')
+  }
+  localStorage.setItem('leet-web-version', String(nextVersion))
+  window.location.reload()
+}
+
+export function onDownloadProgress(callback) {
+  return () => {}
+}
+
+export function exitApp() {
+  if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+    const app = window.Capacitor.Plugins?.App
+    if (app && typeof app.exitApp === 'function') {
+      app.exitApp()
+      return
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.location.href = 'about:blank'
+  }
 }
 
 export async function installUpdate(manifest, onStatus) {
@@ -81,16 +100,4 @@ export async function installUpdate(manifest, onStatus) {
 
   onStatus?.('Baixando atualização...')
   await plugin.downloadAndInstall({ url: manifest.downloadUrl, fileName: `leet-arena-${manifest.versionName}.apk` })
-}
-
-export function onDownloadProgress(callback) {
-  const plugin = getPlugin()
-  if (!plugin) return () => {}
-  const handle = plugin.addListener('downloadProgress', callback)
-  return () => handle.remove()
-}
-
-export async function exitApp() {
-  const plugin = getPlugin()
-  if (plugin) await plugin.exitApp()
 }
