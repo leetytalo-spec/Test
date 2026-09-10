@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const releasesDir = path.join(__dirname, 'releases')
 const manifestPath = path.join(releasesDir, 'latest.json')
-const BASE_URL = process.env.UPDATE_BASE_URL || 'https://leetarena.zorobot.shop'
+const BASE_URL = process.env.UPDATE_BASE_URL || 'https://leetarena.tech'
 
 function parseArgs() {
   const args = {}

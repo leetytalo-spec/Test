@@ -1,4 +1,7 @@
 # Logs
+.env
+certs/
+
 logs
 *.log
 npm-debug.log*
@@ -78,6 +81,7 @@ update-server/releases/
 .env
 .env.*
 !.env.example
+certs/
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

@@ -1,0 +1,85 @@
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    command: npx vite preview --host 0.0.0.0 --port 4173
+    expose:
+      - "4173"
+    environment:
+      VITE_WS_URL: ${VITE_WS_URL:?Configure VITE_WS_URL in .env}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4173').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ws:
+    build:
+      context: .
+      target: runtime
+    command: node server.js
+    expose:
+      - "8787"
+    environment:
+      PORT: ${PORT:-8787}
+      NODE_ENV: ${NODE_ENV:-production}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  media:
+    build:
+      context: .
+      target: runtime
+    command: node media-server.js
+    expose:
+      - "8788"
+    environment:
+      MEDIA_PORT: ${MEDIA_PORT:-8788}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?Configure ADMIN_USERNAME in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Configure ADMIN_PASSWORD in .env}
+    volumes:
+      - media-data:/app/media/videos
+      - auth-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8788/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      app:
+        condition: service_healthy
+      ws:
+        condition: service_healthy
+      media:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs/cert.pem:/etc/ssl/certs/local-dev.pem:ro
+      - ./certs/key.pem:/etc/ssl/private/local-dev-key.pem:ro
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Configure MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Configure MINIO_ROOT_PASSWORD in .env}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+volumes:
+  minio-data:
+  media-data:
+  auth-data:

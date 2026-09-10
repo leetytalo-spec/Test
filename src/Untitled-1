@@ -1,0 +1,91 @@
+cd /root/leet-arena
+
+pm2 delete media-server
+pm2 start media-server.js --name media-server
+pm2 save
+
+echo "--- raiz ---"
+curl -i http://127.0.0.1:8788/
+
+echo "--- manifest ---"
+curl -i http://127.0.0.1:8788/manifest.jsoncurl -i http://127.0.0.1:8788/
+curl -i http://leetarena.tech/media/
+curl -i http://leetarena.tech/updates/latest.jsoncurl -i http://127.0.0.1:8788/
+curl -i http://leetarena.tech/media/
+curl -i http://leetarena.tech/updates/latest.jsoncurl -i http://127.0.0.1:8788/
+curl -i http://leetarena.tech/media/
+curl -i http://leetarena.tech/updates/latest.jsoncurl -I http://leetarena.techssh root@2.25.214.134 "mkdir -p /var/www/leetarena-updates/apk"
+scp /workspaces/Test/update-server/releases/leet-arena-0.1.14.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.14.apkssh root@2.25.214.134 "mkdir -p /var/www/leetarena-updates/apk"
+scp /workspaces/Test/update-server/releases/leet-arena-0.1.14.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.14.apkapt update
+apt install -y certbot python3-certbot-nginxapt update
+apt install -y certbot python3-certbot-nginxapt update
+apt install -y certbot python3-certbot-nginxnginx -t
+systemctl reload nginx
+ss -tlnp | grep -E ':80|:443'scp /workspaces/Test/update-server/releases/latest.json root@2.25.214.134:/var/www/leetarena-updates/latest.jsonscp /workspaces/Test/update-server/releases/leet-arena-0.1.15.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.15.apkcurl -I --max-time 15 https://leetarena.tech/updates/apk/leet-arena-0.1.15.apkls -lh /var/www/leetarena-updates/latest.json
+ls -lh /var/www/leetarena-updates/apk/leet-arena-0.1.15.apkscp /workspaces/Test/update-server/releases/leet-arena-0.1.15.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.15.apkls -lh /workspaces/Test/update-server/releases/leet-arena-0.1.15.apkscp /workspaces/Test/update-server/releases/latest.json root@2.25.214.134:/var/www/leetarena-updates/latest.jsonscp /workspaces/Test/update-server/releases/latest.json root@2.25.214.134:/var/www/leetarena-updates/latest.jsoncurl -sS https://leetarena.tech/updates/latest.json
+curl -I https://leetarena.tech/updates/apk/leet-arena-0.1.16.apkcurl -sS https://leetarena.tech/updates/latest.json
+curl -I https://leetarena.tech/updates/apk/leet-arena-0.1.16.apknano /etc/nginx/sites-available/leetarena.techlocation /updates/ {
+    alias /var/www/leetarena-updates/;
+
+    add_header Access-Control-Allow-Origin "*" always;
+    add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Content-Type" always;
+
+    try_files $uri =404;
+}sed -i '/alias \/var\/www\/leetarena-updates\//a\        add_header Access-Control-Allow-Origin "*" always;\n        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;\n        add_header Access-Control-Allow-Headers "Content-Type" always;' /etc/nginx/sites-available/leetarena.techsed -i '/alias \/var\/www\/leetarena-updates\//a\        add_header Access-Control-Allow-Origin "*" always;\n        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;\n        add_header Access-Control-Allow-Headers "Content-Type" always;' /etc/nginx/sites-available/leetarena.techscp /workspaces/Test/update-server/releases/leet-arena-0.1.17.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.17.apkscp /workspaces/Test/update-server/releases/leet-arena-0.1.17.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.17.apkcurl -sS https://leetarena.tech/updates/latest.jsoncurl -sS https://leetarena.tech/updates/latest.jsoncurl -sS https://leetarena.tech/updates/latest.jsoncurl -sS https://leetarena.tech/updates/latest.jsoncurl -sS https://leetarena.tech/updates/latest.jsoncurl -I --max-time 15 https://leetarena.tech/updates/apk/leet-arena-0.1.17.apkread -s -p "Senha do painel: " ADMIN_PASSWORD; echoread -s -p "Senha do painel: " ADMIN_PASSWORD; echoread -s -p "Senha do painel: " ADMIN_PASSWORD; echoread -s -p "Senha do painel: " ADMIN_PASSWORD; echoread -s -p "Senha do painel: " ADMIN_PASSWORD; echoread -s -p "Senha do painel: " ADMIN_PASSWORD; echoread -s -p "Senha do painel: " ADMIN_PASSWORD; echopm2 save
+unset ADMIN_PASSWORDcurl -i http://127.0.0.1:8788/admin/sessioncurl -i http://127.0.0.1:8788/admin/sessionread -s -p "Senha do painel: " ADMIN_PASSWORD; echoADMIN_PASSWORD="$ADMIN_PASSWORD" pm2 restart media-server --update-envADMIN_PASSWORD="$ADMIN_PASSWORD" pm2 restart media-server --update-envcurl -i http://127.0.0.1:8788/admin/sessionpid=$(pm2 pid media-server); if tr '\0' '\n' < "/proc/$pid/environ" | grep -q '^ADMIN_PASSWORD=.\+$'; then echo "SENHA CONFIGURADA"; else echo "SENHA VAZIA"; ficd /root/leet-arenacd /root/leet-arenaread -s -p "Nova senha do admin: " ADMIN_PASSWORD; echoread -s -p "Nova senha do admin: " ADMIN_PASSWORD; echoscp /workspaces/Test/update-server/releases/latest.json root@2.25.214.134:/var/www/leetarena-updates/latest.jsoncurl -sS https://leetarena.tech/media/manifest.jsoncurl -sS https://leetarena.tech/media/manifest.jsoncurl -sS https://leetarena.tech/media/manifest.jsonfind /root/leet-arena/media/videos/cedric -maxdepth 1 -type f -printf '%f %s bytes\n'find /root/leet-arena/media/videos/cedric -maxdepth 1 -type f -printf '%f %s bytes\n'nginx -t && systemctl reload nginxnginx -t && systemctl reload nginxnginx -t && systemctl reload nginxtail -f /var/log/nginx/error.logpm2 logs media-server --lines 30nginx -t && systemctl reload nginxnginx -t && systemctl reload nginxnginx -t && systemctl reload nginxcurl -sS -D - -o /dev/null -X OPTIONS "https://leetarena.tech/media/upload?character=cedric&ability=predatory" \
+-H "Origin: https://localhost" \
+-H "Access-Control-Request-Method: POST" \
+-H "Access-Control-Request-Headers: content-type,authorization"scp /workspaces/Test/update-server/releases/latest.json root@2.25.214.134:/var/www/leetarena-updates/latest.jsonscp /workspaces/Test/update-server/releases/latest.json root@2.25.214.134:/var/www/leetarena-updates/latest.jsonscp /workspaces/Test/update-server/releases/latest.json root@2.25.214.134:/var/www/leetarena-updates/latest.jsonscp /workspaces/Test/update-server/releases/latest.json root@2.25.214.134:/var/www/leetarena-updates/latest.jsonscp /workspaces/Test/update-server/releases/latest.json root@2.25.214.134:/var/www/leetarena-updates/latest.jsonscp /workspaces/Test/update-server/releases/leet-arena-0.1.26.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.26.apkscp /workspaces/Test/update-server/releases/leet-arena-0.1.26.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.26.apkscp /workspaces/Test/update-server/releases/leet-arena-0.1.26.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.26.apkscp /workspaces/Test/update-server/releases/leet-arena-0.1.26.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.26.apkscp /workspaces/Test/update-server/releases/leet-arena-0.1.26.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.26.apkscp /workspaces/Test/update-server/releases/leet-arena-0.1.26.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.26.apkpm2 restart media-server && pm2 savepm2 restart media-server && pm2 savepm2 restart media-server && pm2 savenode update-server/publish-web.js 7 "Tela de carregamento e preload das mídias"
+scp update-server/releases/web.json root@2.25.214.134:/var/www/leetarena-updates/web.json
+scp update-server/releases/web-7.zip root@2.25.214.134:/var/www/leetarena-updates/web-7.zipscp /workspaces/Test/update-server/releases/leet-arena-0.1.26.apk root@2.25.214.134:/var/www/leetarena-updates/apk/leet-arena-0.1.26.apkcd /workspaces/Test
+
+npm run build
+
+node update-server/publish-web.js 26 "Janela lateral dos modos, avatar na sala, nomes no duelo, status e habilidades"
+
+scp -o StrictHostKeyChecking=accept-new \
+  update-server/releases/web-26.zip \
+  update-server/releases/web.json \
+  root@2.25.214.134:/var/www/leetarena-updates/
+
+echo "--- manifesto remoto ---"
+curl -fsS https://leetarena.tech/updates/web.json
+
+echo
+echo "--- status da versão 26 ---"
+curl -o /dev/null -s -w '%{http_code}\n' https://leetarena.tech/updates/web-26.zipcd /workspaces/Test
+
+npm run build
+
+node update-server/publish-web.js 27 "HUD com nickname, HP em alerta e fúria do Voss"
+
+scp -o StrictHostKeyChecking=accept-new \
+  update-server/releases/web-27.zip \
+  update-server/releases/web.json \
+  root@2.25.214.134:/var/www/leetarena-updates/
+
+echo "--- manifesto remoto ---"
+curl -fsS https://leetarena.tech/updates/web.json
+
+echo
+echo "--- status da versão 27 ---"
+curl -o /dev/null -s -w '%{http_code}\n' https://leetarena.tech/updates/web-27.zipcd /workspaces/Test
+
+scp -o ConnectTimeout=30 \
+  -o StrictHostKeyChecking=accept-new \
+  update-server/releases/web-30.zip \
+  update-server/releases/web.json \
+  root@2.25.214.134:/var/www/leetarena-updates/  cd /workspaces/Test
+  
+  scp -o ConnectTimeout=30 \
+    -o StrictHostKeyChecking=accept-new \
+    update-server/releases/web-30.zip \
+    update-server/releases/web.json \
+    root@2.25.214.134:/var/www/leetarena-updates/    cd /workspaces/Test
+    
+    scp -o ConnectTimeout=30 \
+      -o StrictHostKeyChecking=accept-new \
+      update-server/releases/web-30.zip \
+      update-server/releases/web.json \
+      root@2.25.214.134:/var/www/leetarena-updates

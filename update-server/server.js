@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const releasesDir = path.join(__dirname, 'releases')
 const manifestPath = path.join(releasesDir, 'latest.json')
+const webManifestPath = path.join(releasesDir, 'web.json')
 const port = Number(process.env.PORT || 4000)
 
 fs.mkdirSync(releasesDir, { recursive: true })
@@ -27,7 +28,23 @@ app.get('/updates/latest.json', (req, res) => {
   res.type('application/json').send(fs.readFileSync(manifestPath, 'utf8'))
 })
 
+app.get('/updates/web.json', (req, res) => {
+  if (!fs.existsSync(webManifestPath)) {
+    return res.status(404).json({ error: 'Nenhuma versão web publicada ainda.' })
+  }
+  res.type('application/json').send(fs.readFileSync(webManifestPath, 'utf8'))
+})
+
 app.get('/updates/apk/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename)
+  const filePath = path.join(releasesDir, filename)
+  if (!filePath.startsWith(releasesDir) || !fs.existsSync(filePath)) {
+    return res.status(404).send('Arquivo não encontrado.')
+  }
+  res.download(filePath)
+})
+
+app.get('/updates/web/:filename', (req, res) => {
   const filename = path.basename(req.params.filename)
   const filePath = path.join(releasesDir, filename)
   if (!filePath.startsWith(releasesDir) || !fs.existsSync(filePath)) {
