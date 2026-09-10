@@ -28,6 +28,7 @@ const state = {
   screen: 'home', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
   online: false, socket: null, roomFeedSocket: null, roomCode: '', createdRoomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [],
   homeMode: 'offline', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false,
+  characterBookOpenId: '',
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
   updateAvailable: false, updateManifest: null, updateStatus: '', updateInstalling: false, appVersionName: '',
 }
@@ -65,6 +66,7 @@ function renderHome() {
       </div>
       ${isOnlineMode ? renderOnlinePanel() : renderOfflinePanel()}
     </div>
+    ${renderCharacterBookModal()}
   </section>`
 }
 
@@ -75,7 +77,34 @@ function renderOfflinePanel() {
     <div class="versus">VS</div>
     ${playerPicker(1, 'JOGADOR 2', 'voss')}
     <button class="primary-button" data-action="start">DUELO OFFLINE <span>↗</span></button>
+    ${renderCharacterBookPanel()}
   `
+}
+
+function renderCharacterBookPanel() {
+  return `<div class="character-book">
+    <p class="panel-label">LIVRO DE PERSONAGENS</p>
+    <div class="character-book-buttons">
+      ${Object.values(characters).map((character) => `<button class="character-book-btn" data-action="open-character-book" data-character-id="${character.id}">${character.name}</button>`).join('')}
+    </div>
+  </div>`
+}
+
+function renderCharacterBookModal() {
+  const character = state.characterBookOpenId ? characters[state.characterBookOpenId] : null
+  if (!character) return ''
+  return `<div class="modal-overlay character-book-overlay" data-action="dismiss-character-book">
+    <div class="modal-card character-book-modal">
+      <p class="modal-title">LIVRO · ${character.name.toUpperCase()}</p>
+      <p class="modal-sub">${character.title}</p>
+      <div class="character-book-abilities">
+        ${character.abilities.map((ability) => `<p><strong>${ability.name}:</strong> ${ability.detail}</p>`).join('')}
+      </div>
+      <div class="modal-btns">
+        <button class="primary-button small secondary" data-action="close-character-book">FECHAR</button>
+      </div>
+    </div>
+  </div>`
 }
 
 function renderOnlinePanel() {
@@ -238,6 +267,20 @@ function bindEvents() {
   document.querySelector('[data-action="start"]')?.addEventListener('click', () => { clearOnlineSession(); startMusic(); startGame(); })
   document.querySelector('[data-action="show-online-mode"]')?.addEventListener('click', () => { state.homeMode = 'online'; clearOnlineSession(); render(); })
   document.querySelector('[data-action="show-offline-mode"]')?.addEventListener('click', () => { state.homeMode = 'offline'; clearOnlineSession(); render(); })
+  document.querySelectorAll('[data-action="open-character-book"]').forEach((button) => button.addEventListener('click', () => {
+    state.characterBookOpenId = button.dataset.characterId || ''
+    render()
+  }))
+  document.querySelector('[data-action="close-character-book"]')?.addEventListener('click', () => {
+    state.characterBookOpenId = ''
+    render()
+  })
+  document.querySelector('[data-action="dismiss-character-book"]')?.addEventListener('click', (event) => {
+    if (event.target === event.currentTarget) {
+      state.characterBookOpenId = ''
+      render()
+    }
+  })
   document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => { startMusic(); connectOnline('create'); })
   document.querySelectorAll('[data-room-code-entry]').forEach((button) => button.addEventListener('click', () => { startMusic(); connectOnline('join', button.dataset.roomCodeEntry); }))
   document.querySelector('[data-action="cancel-online"]')?.addEventListener('click', () => {
