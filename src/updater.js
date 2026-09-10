@@ -1,6 +1,7 @@
 import { registerPlugin } from '@capacitor/core'
 
 const UPDATE_MANIFEST_URL = 'https://leetarena.zorobot.shop/updates/latest.json'
+const WEB_UPDATE_MANIFEST_URL = 'https://leetarena.tech/updates/web.json'
 const ApkUpdater = registerPlugin('ApkUpdater')
 
 function getPlugin() {
@@ -39,6 +40,51 @@ export async function checkForUpdate() {
 
   const available = Number(manifest.versionCode) > Number(current.versionCode)
   return { available, manifest, currentVersionName: current.versionName }
+}
+
+export async function checkWebUpdate() {
+  try {
+    const response = await fetch(WEB_UPDATE_MANIFEST_URL, { cache: 'no-store' })
+    if (!response.ok) return { available: false }
+    const manifest = await response.json()
+    const current = Number(localStorage.getItem('leet-web-version') || '0')
+    return {
+      available: Number(manifest.versionCode) > current,
+      manifest,
+      currentVersionName: manifest.versionName,
+    }
+  } catch (error) {
+    return { available: false, error: error.message || 'Falha ao verificar a atualização web.' }
+  }
+}
+
+export async function installWebUpdate(manifest) {
+  if (!manifest?.downloadUrl) {
+    throw new Error('Manifesto da atualização web sem URL de download.')
+  }
+  const nextVersion = Number(manifest.versionCode || 0)
+  if (!Number.isFinite(nextVersion)) {
+    throw new Error('Versão da atualização web inválida.')
+  }
+  localStorage.setItem('leet-web-version', String(nextVersion))
+  window.location.reload()
+}
+
+export function onDownloadProgress(callback) {
+  return () => {}
+}
+
+export function exitApp() {
+  if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+    const app = window.Capacitor.Plugins?.App
+    if (app && typeof app.exitApp === 'function') {
+      app.exitApp()
+      return
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.location.href = 'about:blank'
+  }
 }
 
 export async function installUpdate(manifest, onStatus) {
