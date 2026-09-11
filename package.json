@@ -6,12 +6,18 @@
   "scripts": {
     "dev": "vite",
     "server": "node server.js",
+    "media-server": "node media-server.js",
+    "load-test": "node scripts/load-test.js",
+    "test:combat": "node --test tests/combat-engine.test.js",
     "online": "concurrently \"npm run server\" \"npm run dev -- --host 0.0.0.0\"",
     "build": "vite build",
     "android:sync": "npm run build && cap sync android",
     "android:open": "cap open android",
     "android:debug": "npm run android:sync && cap run android",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prod:cert": "./scripts/generate-cert.sh",
+    "prod:up": "./scripts/prod-up.sh",
+    "prod:down": "docker compose -f docker-compose.prod.yml down"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.1",
