@@ -2191,15 +2191,19 @@ function skipTurn() {
 }
 
 async function startGame() {
-  const ids = [...document.querySelectorAll('[data-player]')].map((select) => select.value)
-  if (ids[0] === ids[1]) {
-    ids[1] = Object.keys(characters).find((id) => id !== ids[0]) || ids[1]
+  const selects = [...document.querySelectorAll('[data-player]')].map((s) => s.value).filter((v) => v && characters[v])
+  const p1Id = selects[0] || 'cedric'
+  let p2Id = selects[1] || 'voss'
+  if (p1Id === p2Id) {
+    p2Id = Object.keys(characters).find((id) => id !== p1Id) || 'voss'
   }
-  state.players = ids.map((id) => createPlayer(characters[id]))
+  state.players = [createPlayer(characters[p1Id] || characters.cedric), createPlayer(characters[p2Id] || characters.voss)]
   state.screen = 'loading'; state.turn = 1; state.phase = 'p1'; state.selections = {}; state.log = []; state.result = ''; state.animation = null; state.online = false; state.onlineWaiting = false; state.opponentChosen = false; state.matchResultRecorded = false
-  state.lastTurnActions = [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }]
+  state.lastTurnActions = [{ text: 'Aguardando escolhas' }, { text: 'Aguardando escolhas' }]
   render()
-  await preloadBattleMedia()
+  try {
+    await preloadBattleMedia()
+  } catch {}
   state.screen = 'battle'
   startTurnTimer()
   startMusic()

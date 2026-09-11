@@ -127,9 +127,15 @@ const getRoomPlayer = (room, socket) => {
 }
 
 const httpServer = http.createServer((req, res) => {
-  if (req.url === '/health' || req.url === '/ws/health' || req.url === '/') {
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
-    return res.end(JSON.stringify({ ok: true, status: 'online-server-ok', rooms: rooms.size, clients: clients.size }))
+  const parsedUrl = (req.url || '').split('?')[0].replace(/\/+$/, '') || '/'
+  if (['/health', '/ws/health', '/', '/ws'].includes(parsedUrl)) {
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    })
+    return res.end(JSON.stringify({ ok: true, status: 'online-server-ok', rooms: rooms.size, clients: clients.size, time: Date.now() }))
   }
   res.writeHead(404)
   res.end('Not Found')
