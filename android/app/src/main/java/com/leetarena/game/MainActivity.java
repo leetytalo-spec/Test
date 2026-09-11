@@ -11,6 +11,7 @@ import java.io.File;
 
 public class MainActivity extends BridgeActivity {
 	private static final String WEB_PREFS = "leet-web-update";
+	private static final int BUNDLED_WEB_VERSION = 69;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -19,6 +20,9 @@ public class MainActivity extends BridgeActivity {
 		getBridge().getWebView().getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
 		SharedPreferences prefs = getSharedPreferences(WEB_PREFS, Context.MODE_PRIVATE);
+		if (prefs.getInt("webVersion", 0) < BUNDLED_WEB_VERSION) {
+			prefs.edit().remove("basePath").remove("webVersion").apply();
+		}
 		String basePath = prefs.getString("basePath", null);
 		if (basePath != null) {
 			File target = new File(basePath);

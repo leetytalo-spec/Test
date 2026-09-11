@@ -268,6 +268,7 @@ function renderAdmin() {
 function renderAccountAccess() {
   const isRegister = state.authMode === 'register'
   return `<section class="admin-login-shell">
+    ${renderUpdateBanner()}
     <form class="admin-login-panel" data-auth-form>
       <div class="ops-brand"><span>LA</span><div><strong>LEET ARENA</strong><small>Conta da arena</small></div></div>
       <div class="auth-switch"><button type="button" class="${!isRegister ? 'active' : ''}" data-auth-mode="login">ENTRAR</button><button type="button" class="${isRegister ? 'active' : ''}" data-auth-mode="register">CRIAR CONTA</button></div>
@@ -2357,22 +2358,13 @@ function currentPlayerName() {
 }
 
 // O chat geral reaproveita a conexão da lista de salas e reconecta se ela tiver caído.
-function ensureChatSocket() {  const socket = state.roomFeedSocket
+function ensureChatSocket() {
+  const socket = state.roomFeedSocket
   if (socket && (socket.readyState === globalThis.WebSocket.OPEN || socket.readyState === globalThis.WebSocket.CONNECTING)) return
   state.roomFeedSocket = null
   state.roomFeedConnecting = false
   state.roomFeedConnected = false
   connectOnline('list')
-}
-
-// Redes móveis costumam bloquear portas altas, então tentamos a porta 443 antes do IP direto.
-const socketEndpoints = ['wss://leetarena.tech/ws', 'ws://2.25.214.134:8787']
-let socketEndpointIndex = 0
-let socketEndpointWorking = false
-
-function rotateSocketEndpoint() {
-  if (socketEndpointWorking) return
-  socketEndpointIndex = (socketEndpointIndex + 1) % socketEndpoints.length
 }
 
 function onlineSocketUrl() {
@@ -2381,7 +2373,7 @@ function onlineSocketUrl() {
   const configured = envUrl || runtimeUrl
   if (configured) return configured
 
-  if (Capacitor.isNativePlatform()) return socketEndpoints[socketEndpointIndex % socketEndpoints.length]
+  if (Capacitor.isNativePlatform()) return 'wss://leetarena.tech/ws'
 
   if (typeof window !== 'undefined' && window.location?.host) {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -2391,7 +2383,7 @@ function onlineSocketUrl() {
   return 'ws://localhost:8787'
 }
 
-function connectOnline(mode, selectedCode = '') {
+function connectOnline(mode, selectedCode = '', retryCount = 0) {
   if (mode === 'list') {
     if (state.roomFeedSocket && state.roomFeedSocket.readyState === globalThis.WebSocket.OPEN) return
     if (state.roomFeedSocket && state.roomFeedSocket.readyState === globalThis.WebSocket.CONNECTING) return
@@ -2426,8 +2418,9 @@ function connectOnline(mode, selectedCode = '') {
   }
   if (mode === 'list') state.roomFeedSocket = socket
   else state.socket = socket
+  let opened = false
   socket.addEventListener('open', () => {
-    socketEndpointWorking = true
+    opened = true
     if (mode === 'list') {
       state.roomFeedConnected = true
       socket.send(JSON.stringify({ type: 'list-rooms' }))
@@ -2438,9 +2431,16 @@ function connectOnline(mode, selectedCode = '') {
     socket.send(JSON.stringify(mode === 'create' ? { type: 'create', token: state.authToken, character, name, avatar: getPlayerAvatar() } : { type: 'join', token: state.authToken, code, character, name, avatar: getPlayerAvatar() }))
   })
   socket.addEventListener('message', (event) => handleOnlineMessage(JSON.parse(event.data)))
-  socket.addEventListener('error', () => { rotateSocketEndpoint(); if (mode === 'list') { state.roomFeedConnected = false; state.roomFeedConnecting = false } state.onlineError = ''; render() })
-  socket.addEventListener('close', () => { if (mode === 'list') { state.roomFeedSocket = null; state.roomFeedConnected = false; state.roomFeedConnecting = false; if (state.chatOpen) render() } if (!socket.intentionalClose && mode !== 'list' && (!state.roomCode || state.screen === 'home')) { state.onlineError = ''; render() } })
-  setTimeout(() => { if (socket.readyState === globalThis.WebSocket.CONNECTING) { rotateSocketEndpoint(); socket.close(); if (mode === 'list') state.roomFeedConnecting = false; state.onlineError = ''; render() } }, 8000)
+  socket.addEventListener('error', () => { if (mode === 'list') { state.roomFeedConnected = false; state.roomFeedConnecting = false } state.onlineError = ''; render() })
+  socket.addEventListener('close', () => {
+    if (mode === 'list') { state.roomFeedSocket = null; state.roomFeedConnected = false; state.roomFeedConnecting = false; if (state.chatOpen) render() }
+    if (!socket.intentionalClose && !opened && retryCount < 2) {
+      setTimeout(() => connectOnline(mode, selectedCode, retryCount + 1), 1000)
+      return
+    }
+    if (!socket.intentionalClose && mode !== 'list' && (!state.roomCode || state.screen === 'home')) { state.onlineError = ''; render() }
+  })
+  setTimeout(() => { if (socket.readyState === globalThis.WebSocket.CONNECTING) { socket.close(); if (mode === 'list') state.roomFeedConnecting = false; state.onlineError = ''; render() } }, 8000)
 }
 
 async function handleOnlineMessage(message) {
@@ -3118,13 +3118,21 @@ setInterval(() => {
   if (state.screen !== 'battle' && !state.updateInstalling) refreshWebUpdateNotice()
 }, 60000)
 
-checkForUpdate().then((result) => {
-  state.updateError = result.available ? '' : (result.error || '')
-  if (result.available) {
+checkWebUpdate().then((web) => {
+  if (web.available) {
     state.updateAvailable = true
-    state.updateManifest = result.manifest
-    if (state.screen === 'home') render()
+    state.updateManifest = { ...web.manifest, source: 'web' }
+    render()
+    return
   }
+  checkForUpdate().then((result) => {
+    state.updateError = result.available ? '' : (result.error || '')
+    if (result.available) {
+      state.updateAvailable = true
+      state.updateManifest = result.manifest
+      render()
+    }
+  })
 })
 
 getInstalledVersion().then((info) => {
