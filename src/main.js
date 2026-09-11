@@ -134,26 +134,10 @@ const characters = {
   },
 }
 
-const codexExtras = {
-  cedric: [
-    { name: 'Frieza (passiva)', detail: 'Se receber 3 ataques básicos consecutivos, recupera 300 de HP. 2 usos.' },
-  ],
-  voss: [
-    { name: 'Rancor (passiva)', detail: 'Se sofrer um dano único maior que 250, ganha 20 de fúria. Ilimitado.' },
-    { name: 'Ruminação (passiva)', detail: 'Se sofrer 3 ataques consecutivos do mesmo tipo, ganha 15 de Fúria. Ilimitado.' },
-  ],
-  zero: [
-    { name: 'Sou o melhor! (passiva)', detail: 'Se você e seu oponente usarem ataque básico ao mesmo tempo, o ataque básico do oponente será anulado, e Zero ganhará 30 de experiência. 7 usos.' },
-  ],
-  ogro: [
-    { name: 'Hora do Rango (passiva)', detail: 'Após o 22º turno, o Ogro ganha +500 de dano permanente em seu Ataque Básico.' },
-  ],
-}
-
 const state = {
   screen: storedAuthToken ? (storedUser?.role === 'admin' ? 'dashboard' : 'home') : 'auth', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
   online: false, socket: null, roomFeedSocket: null, roomCode: '', createdRoomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [], onlinePlayerNames: [],
-  homeMode: '', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false, actionNotice: '',
+  homeMode: '', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false,
   lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }], hpDeltas: [null, null],
   updateAvailable: false, updateManifest: null, updateStatus: '', updateError: '', updateInstalling: false, updateProgress: 0, updateDownloaded: 0, updateTotal: 0, appVersionName: '',
   adminTab: 'upload', adminUpload: { character: 'cedric', ability: 'basic', file: null, status: '' },
@@ -162,7 +146,7 @@ const state = {
   battleLoading: false, battleLoadProgress: 0, battleLoadTotal: 0, battleLoadStatus: '', characterChoice: null, characterOpponentChosen: false, characterTimeLeft: 45, characterTimerId: null,
   dashboardTab: 'overview', dashboardRange: 'daily', dashboardFilter: 'all', dashboardQuery: '', dashboardNotice: '', dashboardSearchOpen: false,
   setupOpen: false, profileOpen: false, profileDraft: '', leaderboardOpen: false, comingSoonOpen: false, comingSoonLabel: '',
-  denyPickerOpen: false, denyTargetAbilityId: '', foresightPickerOpen: false, sanyResearchPickerOpen: false, pressurePickerOpen: false, modeDrawerEntering: false, codexOpen: false, codexCharacter: 'cedric', mailboxOpen: false, adminMail: { subject: '', body: '', status: '' }, chatOpen: false, chatTab: 'general', generalChatMessages: [], privateChatMessages: [], chatDraft: '',
+  denyPickerOpen: false, denyTargetAbilityId: '', foresightPickerOpen: false, pressurePickerOpen: false, modeDrawerEntering: false, codexOpen: false, codexCharacter: 'cedric', mailboxOpen: false, adminMail: { subject: '', body: '', status: '' }, chatOpen: false, chatTab: 'general', generalChatMessages: [], privateChatMessages: [], chatDraft: '',
   videoQueue: [], videoPlaying: false, turnTimeLeft: 40, turnTimerId: null, loadingTipIndex: 0, loadingTipTimerId: null,
 }
 
@@ -357,12 +341,7 @@ function renderGameHome() {
         <p class="intro welcome-line">Bem-vindo(a) ao <span>Leet Arena</span></p>
         <p class="intro choose-mode">Escolha o modo:</p>
       </div>
-      <div class="mode-selector rpg-mode-selector">
-        <button class="primary-button ${isOnlineMode ? 'active' : ''}" data-action="show-online-mode"><i data-lucide="Swords"></i><span>DUELO</span></button>
-        <button class="primary-button secondary ${isOfflineMode ? 'active' : ''}" data-action="show-offline-mode"><i data-lucide="Target"></i><span>MODO TESTE</span></button>
-        <button class="primary-button secondary ${isBattle2v2Mode ? 'active' : ''}" data-action="show-battle2v2-mode"><i data-lucide="Users"></i><span>BATALHA 2X2</span></button>
-        <button class="primary-button secondary ${isTournamentMode ? 'active' : ''}" data-action="show-tournament-mode"><i data-lucide="Trophy"></i><span>TORNEIOS</span></button>
-      </div>
+      <div class="mode-selector rpg-mode-selector"><button class="primary-button ${isOnlineMode ? 'active' : ''}" data-action="show-online-mode">DUELO</button><button class="primary-button secondary ${isOfflineMode ? 'active' : ''}" data-action="show-offline-mode">MODO TESTE</button><button class="primary-button secondary ${isBattle2v2Mode ? 'active' : ''}" data-action="show-battle2v2-mode">BATALHA 2X2</button><button class="primary-button secondary ${isTournamentMode ? 'active' : ''}" data-action="show-tournament-mode">TORNEIOS</button></div>
     </div>
     ${modeOpen ? `<div class="mode-drawer-backdrop ${entering ? 'is-entering' : ''}" data-action="close-mode-drawer"></div>
     <aside class="mode-drawer ${entering ? 'is-entering' : ''}" role="dialog" aria-label="${modeTitle}">
@@ -380,15 +359,11 @@ function renderGameSetupMenu() {
   const rank = getPlayerRank(username)
   const unread = getUnreadMailCount()
   return `<div class="identity-corner">
-    <div class="identity-item">
+    <div class="identity-item identity-stack">
       <button class="profile-avatar-corner" type="button" data-action="open-profile" title="Perfil do jogador"><span class="account-rune">${avatar ? `<img src="${avatar}" alt="Avatar de ${escapeHtml(nickname)}">` : initials}</span></button>
       <small>Perfil</small>
-    </div>
-    <div class="identity-item">
       <button class="rank-badge shop-badge" type="button" data-action="open-coming-soon" data-coming-soon="Loja" title="Loja"><i data-lucide="Store"></i></button>
       <small>Loja</small>
-    </div>
-    <div class="identity-item">
       <button class="rank-badge chat-badge" type="button" data-action="open-chat" title="Chat geral"><i data-lucide="MessageCircle"></i></button>
       <small>Chat</small>
     </div>
@@ -489,7 +464,7 @@ function renderCodexModal() {
               <span class="codex-tab-copy"><strong>${character.name}</strong><small>${character.title} · ${character.hp} HP</small></span>
               <span class="codex-arrow">${open ? '−' : '+'}</span>
             </button>
-            <div class="codex-drawer" ${open ? '' : 'hidden'}>${[...character.abilities, ...(codexExtras[character.id] || [])].map((ability) => `<article class="codex-ability"><strong>${escapeHtml(ability.name)}</strong><div class="codex-ability-detail">${escapeHtml(ability.detail)}</div></article>`).join('')}</div>
+            <div class="codex-drawer" ${open ? '' : 'hidden'}>${character.abilities.map((ability) => `<article class="codex-ability"><strong>${escapeHtml(ability.name)}</strong><div class="codex-ability-detail">${escapeHtml(ability.detail)}</div></article>`).join('')}</div>
           </div>`
         }).join('')}
       </div>
@@ -923,12 +898,10 @@ function renderBattle() {
   const p2Percent = Math.min(100, Math.max(0, p2.hp / p2.maxHp * 100))
   return `<section class="battle-shell">
     <header class="battle-topbar"><div class="top-player"><strong>${battleSlotLabel(0, p1)}</strong>${hpDeltaBadge(0)}<div class="top-hp"><i style="width:${p1Percent}%; background:${getHpBarColor(p1Percent)}"></i><span class="top-hp-value">${p1.hp}/${p1.maxHp}</span></div></div><div class="turn-count">TURNO <strong>${state.turn}</strong><span class="turn-timer">${Math.max(0, state.turnTimeLeft)}s</span></div><div class="top-player opponent"><strong>${battleSlotLabel(1, p2)}</strong>${hpDeltaBadge(1)}<div class="top-hp"><i style="width:${p2Percent}%; background:${getHpBarColor(p2Percent)}"></i><span class="top-hp-value">${p2.hp}/${p2.maxHp}</span></div></div></header>
-    ${renderBattleUpdateNotice(finished)}
     <div class="battle-layout">
       <div class="arena-column">
         ${lastActionPanel()}
         <div class="arena-scene">
-          ${hpFeedbackMarkup()}
         </div>
         ${finished ? resultPanel() : actionPanel(activePlayer, state.players[activeIndex === 0 ? 1 : 0])}
       </div>
@@ -940,14 +913,8 @@ function renderBattle() {
     ${renderDenyPickerModal()}
     ${renderForesightPickerModal()}
     ${renderPressurePickerModal()}
-    ${renderActionNoticeModal()}
     ${state.chatOpen ? renderChatModal() : ''}
   </section>`
-}
-
-function renderBattleUpdateNotice(finished) {
-  if (!state.online || finished || !state.updateAvailable || state.updateManifest?.source !== 'web') return ''
-  return '<p class="battle-update-notice">ATUALIZAÇÃO DISPONÍVEL - TERMINE A PARTIDA E REINICIE O JOGO PARA APLICAR</p>'
 }
 
 function hpDeltaBadge(index) {
@@ -957,17 +924,6 @@ function hpDeltaBadge(index) {
     ${delta.damage ? `<b class="hp-delta damage">-${delta.damage}</b>` : ''}
     ${delta.heal ? `<b class="hp-delta heal">+${delta.heal}</b>` : ''}
   </span>`
-}
-
-function hpFeedbackMarkup() {
-  const feedback = (state.hpDeltas || []).map((delta, index) => {
-    if (!delta) return ''
-    const parts = []
-    if (delta.damage) parts.push(`<b class="hp-feedback-item damage">-${delta.damage}</b>`)
-    if (delta.heal) parts.push(`<b class="hp-feedback-item heal">+${delta.heal}💚</b>`)
-    return `<span class="hp-feedback-slot player-${index}">${parts.join('')}</span>`
-  }).join('')
-  return feedback ? `<div class="hp-feedback" aria-live="polite">${feedback}</div>` : ''
 }
 
 function renderPressurePickerModal() {
@@ -989,14 +945,14 @@ function renderPressurePickerModal() {
 }
 
 function renderForesightPickerModal() {
-  if (!state.foresightPickerOpen && !state.sanyResearchPickerOpen) return ''
+  if (!state.foresightPickerOpen) return ''
   const activeIndex = state.online ? state.playerIndex : state.phase === 'p1' ? 0 : 1
   const opponent = state.players[activeIndex === 0 ? 1 : 0]
   if (!opponent) return ''
   const options = opponent.character.abilities.filter((ability) => !isPassiveAbility(ability))
   return `<div class="modal-overlay">
     <div class="modal-card deny-picker">
-      <p class="modal-title">${state.sanyResearchPickerOpen ? 'PESQUISA' : 'PREMONIÇÃO'}</p>
+      <p class="modal-title">PREMONIÇÃO</p>
       <p class="modal-sub">Qual ação ${escapeHtml(opponent.name)} usará no próximo turno?</p>
       <div class="deny-options">${options.map((ability) => `<button class="deny-option" data-foresight-target="${ability.id}">${escapeHtml(ability.name)}</button>`).join('')}</div>
       <div class="modal-btns">
@@ -1019,19 +975,6 @@ function renderDenyPickerModal() {
       <div class="deny-options">${options.map((ability) => `<button class="deny-option" data-deny-target="${ability.id}">${escapeHtml(ability.name)}</button>`).join('')}</div>
       <div class="modal-btns">
         <button class="primary-button small secondary" data-action="cancel-deny">CANCELAR</button>
-      </div>
-    </div>
-  </div>`
-}
-
-function renderActionNoticeModal() {
-  if (!state.actionNotice) return ''
-  return `<div class="modal-overlay">
-    <div class="modal-card">
-      <p class="modal-title">AVISO</p>
-      <p class="modal-sub">${escapeHtml(state.actionNotice)}</p>
-      <div class="modal-btns">
-        <button class="primary-button small" data-action="close-action-notice">ENTENDI</button>
       </div>
     </div>
   </div>`
@@ -1132,7 +1075,7 @@ function isAbilityUnavailable(player, opponent, ability) {
     || (ability.kind === 'broken-limit' && state.turn <= 11)
     || (ability.kind === 'nox-trigger' && !opponent.noxMarks)
     || (ability.kind === 'nox-pressure' && player.noxPressureCharges <= 0)
-    || (ability.kind === 'retaliation' && !(player.brickDodges >= 2 && player.brickPunchesLanded >= 6 && player.brickKicksLanded >= 2))
+    || (ability.kind === 'retaliation' && !(player.brickDodges >= 2 && player.brickPunchesReceived >= 6 && player.brickKicksReceived >= 2))
 }
 
 function randomAbilityId(player, opponent) {
@@ -1272,7 +1215,7 @@ function getPlayerStatusEffects(player) {
     if (player.noxReconstructionActive) buffs.push('Reconstrução')
   }
   if (player.character?.id === 'brick') {
-    warnings.push(`Retaliação S ${Math.min(player.brickPunchesLanded, 6)}/6 C ${Math.min(player.brickKicksLanded, 2)}/2 E ${Math.min(player.brickDodges, 2)}/2`)
+    if (player.brickDodges > 0 || player.brickPunchesReceived > 0 || player.brickKicksReceived > 0) warnings.push(`Retaliação S: ${player.brickPunchesReceived} C: ${player.brickKicksReceived} E: ${player.brickDodges}`)
     if (player.nextTurnDodge) buffs.push('Esquiva')
     if (player.forcedBasicSource === 'provoke') debuffs.push('Provocar')
   }
@@ -1529,7 +1472,6 @@ function bindEvents() {
   document.querySelector('[data-action="skip"]')?.addEventListener('click', skipTurn)
   document.querySelector('[data-action="prompt-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = true; render(); })
   document.querySelector('[data-action="cancel-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = false; render(); })
-  document.querySelector('[data-action="close-action-notice"]')?.addEventListener('click', () => { state.actionNotice = ''; render(); })
   document.querySelector('[data-action="confirm-surrender"]')?.addEventListener('click', () => {
     if (state.online && !state.result) recordMatchResult('loss')
     clearOnlineSession()
@@ -1572,23 +1514,10 @@ function bindEvents() {
         render()
         return
       }
-      if (ability?.kind === 'sany-research') {
-        state.sanyResearchPickerOpen = true
-        render()
-        return
-      }
       if (ability?.kind === 'nox-pressure') {
         state.pressurePickerOpen = true
         render()
         return
-      }
-      if (ability?.kind === 'nox-mark') {
-        const opponent = state.players[activeIndex === 0 ? 1 : 0]
-        if (opponent?.noxMarks >= 10) {
-          state.actionNotice = 'Nox já atingiu o máximo de 10 marcas aplicadas, para adicionar mais marcas, ative o acionador agora!'
-          render()
-          return
-        }
       }
       chooseAbility(phase, button.dataset.ability)
     })
@@ -1613,12 +1542,10 @@ function bindEvents() {
   document.querySelector('[data-action="cancel-deny"]')?.addEventListener('click', () => { state.denyPickerOpen = false; render() })
   document.querySelectorAll('[data-foresight-target]').forEach((button) => button.addEventListener('click', () => {
     const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
-    const selectionType = state.sanyResearchPickerOpen ? 'research' : 'foresight'
     state.foresightPickerOpen = false
-    state.sanyResearchPickerOpen = false
-    chooseAbility(phase, `${selectionType}:${button.dataset.foresightTarget}`)
+    chooseAbility(phase, `foresight:${button.dataset.foresightTarget}`)
   }))
-  document.querySelector('[data-action="cancel-foresight"]')?.addEventListener('click', () => { state.foresightPickerOpen = false; state.sanyResearchPickerOpen = false; render() })
+  document.querySelector('[data-action="cancel-foresight"]')?.addEventListener('click', () => { state.foresightPickerOpen = false; render() })
   document.querySelectorAll('[data-pressure-target]').forEach((button) => button.addEventListener('click', () => {
     const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
     state.pressurePickerOpen = false
@@ -1959,7 +1886,6 @@ async function applyUpdate() {
 async function refreshWebUpdateNotice() {
   const web = await checkWebUpdate()
   if (!web.available) return
-  if (state.updateAvailable && state.updateManifest?.versionCode === web.manifest.versionCode) return
   state.updateAvailable = true
   state.updateManifest = { ...web.manifest, source: 'web' }
   render()
@@ -2129,8 +2055,8 @@ function createPlayer(character) {
     noxPressureCharges: 0,
     noxMarkLocked: false,
     brickDodges: 0,
-    brickPunchesLanded: 0,
-    brickKicksLanded: 0,
+    brickPunchesReceived: 0,
+    brickKicksReceived: 0,
     brickCounterPunches: 0,
     nextTurnDodge: false,
     forcedBasicSource: '',
@@ -2398,7 +2324,7 @@ function formatActionText(player, selectedId, ability) {
   const suffix = [hits, heals].filter(Boolean).join(' ')
   if (selectedId === 'skip' || ability.kind === 'skip') return suffix ? `pulou turno ${suffix}` : 'pulou turno'
   if (player.blockedAbilityId && ability.id === 'basic' && state.turn < player.blockedAbilityUntilTurn) return suffix ? `pulou turno ${suffix}` : 'pulou turno'
-  if ((ability.kind === 'foresight' || ability.kind === 'sany-research') && ability.predictedId) return `${ability.name}: ${ability.predictedName || ability.predictedId}`
+  if (ability.kind === 'foresight' && ability.predictedId) return `${ability.name}: ${ability.predictedName || ability.predictedId}`
   return suffix ? `${label} ${suffix}` : label
 }
 
@@ -2416,10 +2342,6 @@ function resolveSelection(player, selectedId, opponent) {
   const [abilityId, predictedId] = String(selectedId || '').split(':')
   let ability = player.character.abilities.find((item) => item.id === abilityId) ?? player.character.abilities[0]
   if (ability.kind === 'foresight' && predictedId) {
-    const predicted = opponent.character.abilities.find((item) => item.id === predictedId)
-    ability = { ...ability, predictedId, predictedName: predicted?.name || predictedId }
-  }
-  if (ability.kind === 'sany-research' && predictedId) {
     const predicted = opponent.character.abilities.find((item) => item.id === predictedId)
     ability = { ...ability, predictedId, predictedName: predicted?.name || predictedId }
   }
@@ -2450,8 +2372,6 @@ function triggerPredatory(player, opponent, ability, opponentAbility, events) {
   if ((!player.pendingPredatory && !selectedPredatory) || opponentAbility.id !== 'basic') return false
   player.pendingPredatory = false
   player.turnActionLabel = 'Ativou Ataque Predatório'
-  player.turnDamage = []
-  player.turnHealing = []
   if (selectedPredatory) consume(player, ability)
   player.turnDamage = [...(player.turnDamage || []), 160]
   dealDamage(opponent, 160, events, `${player.name} ativou o Ataque predatório e causou 160 de dano.`)
@@ -2716,9 +2636,9 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     const totalDamage = damage + markBonus
     if (ability.uses !== undefined) consume(player, ability)
     const hit = dealDamage(opponent, totalDamage + luckBonus, events, `${player.name} causou ${totalDamage + luckBonus} de dano.`)
-    if (hit && player.character?.id === 'brick') {
-      if (ability.damageType === 'punch') player.brickPunchesLanded += 1
-      if (ability.damageType === 'kick') player.brickKicksLanded += 1
+    if (hit && opponent.character?.id === 'brick') {
+      if (ability.damageType === 'punch') opponent.brickPunchesReceived += 1
+      if (ability.damageType === 'kick') opponent.brickKicksReceived += 1
     }
     if (luckBonus) events.push(`${player.name} ativou Sorte e causou 100 de dano extra.`)
     if (player.character?.id === 'kiro' && ability.id === 'basic' && player.kiroDoubleArmed) {
@@ -2737,7 +2657,7 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
       dealDamage(player, danceDamage, events, `${opponent.name} executou Dança da lâmina e causou ${danceHits.map((value) => `${value} de dano`).join(' + ')}.`)
     }
     if (player.character?.id === 'kyn' && kynDrainDamage > 0 && hit) {
-      const healed = Math.floor(totalDamage * .75)
+      const healed = Math.floor(kynDrainDamage * .75)
       healPlayer(player, healed, events)
       player.drainAvailable = 0
       player.drainGainedThisTurn = true
@@ -2786,7 +2706,7 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
   else if (ability.kind === 'nox-reconstruction') { player.noxReconstructionActive = opponent.noxMarks >= 8; events.push(`${player.name} ativou Reconstrução.`) }
   else if (ability.kind === 'nox-progression') { if (state.turn % 5 === 0) opponent.noxMarks += 1; events.push(`${player.name} verificou Progressão.`) }
   else if (ability.kind === 'counter') { events.push(`${player.name} preparou Contra-Golpe.`) }
-  else if (ability.kind === 'retaliation') { if (player.brickDodges >= 2 && player.brickPunchesLanded >= 6 && player.brickKicksLanded >= 2) { dealDamage(opponent, 700, events, `${player.name} ativou Retaliação e causou 700 de dano.`); player.uses = Object.fromEntries(player.character.abilities.filter((item) => item.uses !== undefined).map((item) => [item.id, item.uses])); player.brickDodges = 0; player.brickPunchesLanded = 0; player.brickKicksLanded = 0 } }
+  else if (ability.kind === 'retaliation') { if (player.brickDodges >= 2 && player.brickPunchesReceived >= 6 && player.brickKicksReceived >= 2) { dealDamage(opponent, 700, events, `${player.name} ativou Retaliação e causou 700 de dano.`); player.uses = Object.fromEntries(player.character.abilities.filter((item) => item.uses !== undefined).map((item) => [item.id, item.uses])); player.brickDodges = 0; player.brickPunchesReceived = 0; player.brickKicksReceived = 0 } }
   else if (ability.kind === 'dodge') { player.nextTurnDodge = true; consume(player, ability); events.push(`${player.name} preparou uma Esquiva.`) }
   else if (ability.kind === 'bindings') { opponent.forcedBasicTurns = 2; opponent.forcedBasicStartsTurn = state.turn + 1; opponent.basicDamageBonus = 100; opponent.basicDamageBonusExpiresTurn = state.turn + 3; consume(player, ability); events.push(`${player.name} amarrou ${opponent.name}: ele será forçado a usar 2 ataques básicos nos próximos 2 turnos e receberá +100 em cada um.`) }
   else if (ability.kind === 'deny') { player.rage -= 25; const candidate = opponent.character.abilities.find((item) => item.id === state.denyTargetAbilityId && item.id !== 'basic' && item.kind !== 'rage') || opponent.character.abilities.find((item) => item.id !== 'basic' && item.kind !== 'rage'); if (candidate) { opponent.blockedAbilityId = candidate.id; opponent.blockedAbilitySource = 'denial'; opponent.blockedAbilityUntilTurn = state.turn + 3; events.push(`${player.name} negou ${candidate.name} de ${opponent.name} pelos próximos 2 turnos.`) } else { events.push(`${player.name} tentou negar, mas ${opponent.name} não tinha habilidade ativa para bloquear.`) } state.denyTargetAbilityId = '' }
@@ -2802,7 +2722,7 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
   else if (ability.kind === 'kiro-double') { player.kiroDoubleArmed = true; consume(player, ability); events.push(`${player.name} preparou Ataque duplo.`) }
   else if (ability.kind === 'sany-lucky') { const damage = Math.floor(200 + Math.random() * 451); const amplified = player.sanyAmplificationUntilTurn >= state.turn ? Math.floor(damage * 1.25) : damage; player.turnDamage = [...(player.turnDamage || []), amplified]; consume(player, ability); dealDamage(opponent, amplified, events, `${player.name} usou Ataque de sorte e causou ${amplified} de dano.`) }
   else if (ability.kind === 'sany-amplify') { player.sanyAmplificationUntilTurn = state.turn + 1; consume(player, ability); events.push(`${player.name} ativou Amplificação.`) }
-  else if (ability.kind === 'sany-research') { player.sanyResearchArmed = true; player.sanyResearchPrediction = ability.predictedId || randomAbilityId(opponent, player); consume(player, ability); events.push(`${player.name} iniciou Pesquisa.`) }
+  else if (ability.kind === 'sany-research') { player.sanyResearchArmed = true; player.sanyResearchPrediction = randomAbilityId(opponent, player); consume(player, ability); events.push(`${player.name} iniciou Pesquisa.`) }
   else if (ability.kind === 'skip') { const recovered = player.character?.id === 'haku' ? healPlayer(player, 50, events) : 0; events.push(recovered > 0 ? `${player.name} pulou turno e ativou Concentração, recuperando ${recovered} HP.` : `${player.name} pulou turno.`) }
   trackVossRumination(opponent, ability, events)
   if (ability.kind !== 'damage') trackCedricFrieza(opponent, ability, events)
@@ -2859,7 +2779,3 @@ getInstalledVersion().then((info) => {
     if (state.screen === 'home') render()
   }
 })
-
-setInterval(() => {
-  if (state.currentUser && state.screen !== 'auth') refreshWebUpdateNotice()
-}, 30000)
