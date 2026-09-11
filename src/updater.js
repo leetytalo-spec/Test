@@ -43,11 +43,31 @@ export async function checkForUpdate() {
 }
 
 export async function checkWebUpdate() {
-  return { available: false }
+  try {
+    const response = await fetch(WEB_UPDATE_MANIFEST_URL, { cache: 'no-store' })
+    if (!response.ok) return { available: false }
+    const manifest = await response.json()
+    const current = Number(localStorage.getItem('leet-web-version') || '0')
+    return {
+      available: Number(manifest.versionCode) > current,
+      manifest,
+      currentVersionName: manifest.versionName,
+    }
+  } catch (error) {
+    return { available: false, error: error.message || 'Falha ao verificar a atualização web.' }
+  }
 }
 
 export async function installWebUpdate(manifest) {
-  throw new Error('Atualização web indisponível nesta versão. Use a atualização do aplicativo.')
+  if (!manifest?.downloadUrl) {
+    throw new Error('Manifesto da atualização web sem URL de download.')
+  }
+  const nextVersion = Number(manifest.versionCode || 0)
+  if (!Number.isFinite(nextVersion)) {
+    throw new Error('Versão da atualização web inválida.')
+  }
+  localStorage.setItem('leet-web-version', String(nextVersion))
+  window.location.reload()
 }
 
 export function onDownloadProgress(callback) {
