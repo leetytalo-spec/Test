@@ -146,7 +146,7 @@ const state = {
   battleLoading: false, battleLoadProgress: 0, battleLoadTotal: 0, battleLoadStatus: '', characterChoice: null, characterOpponentChosen: false, characterTimeLeft: 45, characterTimerId: null,
   dashboardTab: 'overview', dashboardRange: 'daily', dashboardFilter: 'all', dashboardQuery: '', dashboardNotice: '', dashboardSearchOpen: false,
   setupOpen: false, profileOpen: false, profileDraft: '', leaderboardOpen: false, comingSoonOpen: false, comingSoonLabel: '',
-  denyPickerOpen: false, denyTargetAbilityId: '', foresightPickerOpen: false, pressurePickerOpen: false, modeDrawerEntering: false, codexOpen: false, codexCharacter: 'cedric', mailboxOpen: false, adminMail: { subject: '', body: '', status: '' }, chatOpen: false, chatTab: 'general', generalChatMessages: [], privateChatMessages: [], chatDraft: '',
+  denyPickerOpen: false, denyTargetAbilityId: '', foresightPickerOpen: false, sanyResearchPickerOpen: false, pressurePickerOpen: false, modeDrawerEntering: false, codexOpen: false, codexCharacter: 'cedric', mailboxOpen: false, adminMail: { subject: '', body: '', status: '' }, chatOpen: false, chatTab: 'general', generalChatMessages: [], privateChatMessages: [], chatDraft: '',
   videoQueue: [], videoPlaying: false, turnTimeLeft: 40, turnTimerId: null, loadingTipIndex: 0, loadingTipTimerId: null,
 }
 
@@ -946,14 +946,14 @@ function renderPressurePickerModal() {
 }
 
 function renderForesightPickerModal() {
-  if (!state.foresightPickerOpen) return ''
+  if (!state.foresightPickerOpen && !state.sanyResearchPickerOpen) return ''
   const activeIndex = state.online ? state.playerIndex : state.phase === 'p1' ? 0 : 1
   const opponent = state.players[activeIndex === 0 ? 1 : 0]
   if (!opponent) return ''
   const options = opponent.character.abilities.filter((ability) => !isPassiveAbility(ability))
   return `<div class="modal-overlay">
     <div class="modal-card deny-picker">
-      <p class="modal-title">PREMONIÇÃO</p>
+      <p class="modal-title">${state.sanyResearchPickerOpen ? 'PESQUISA' : 'PREMONIÇÃO'}</p>
       <p class="modal-sub">Qual ação ${escapeHtml(opponent.name)} usará no próximo turno?</p>
       <div class="deny-options">${options.map((ability) => `<button class="deny-option" data-foresight-target="${ability.id}">${escapeHtml(ability.name)}</button>`).join('')}</div>
       <div class="modal-btns">
@@ -1529,6 +1529,11 @@ function bindEvents() {
         render()
         return
       }
+      if (ability?.kind === 'sany-research') {
+        state.sanyResearchPickerOpen = true
+        render()
+        return
+      }
       if (ability?.kind === 'nox-pressure') {
         state.pressurePickerOpen = true
         render()
@@ -1565,10 +1570,12 @@ function bindEvents() {
   document.querySelector('[data-action="cancel-deny"]')?.addEventListener('click', () => { state.denyPickerOpen = false; render() })
   document.querySelectorAll('[data-foresight-target]').forEach((button) => button.addEventListener('click', () => {
     const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
+    const selectionType = state.sanyResearchPickerOpen ? 'research' : 'foresight'
     state.foresightPickerOpen = false
-    chooseAbility(phase, `foresight:${button.dataset.foresightTarget}`)
+    state.sanyResearchPickerOpen = false
+    chooseAbility(phase, `${selectionType}:${button.dataset.foresightTarget}`)
   }))
-  document.querySelector('[data-action="cancel-foresight"]')?.addEventListener('click', () => { state.foresightPickerOpen = false; render() })
+  document.querySelector('[data-action="cancel-foresight"]')?.addEventListener('click', () => { state.foresightPickerOpen = false; state.sanyResearchPickerOpen = false; render() })
   document.querySelectorAll('[data-pressure-target]').forEach((button) => button.addEventListener('click', () => {
     const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
     state.pressurePickerOpen = false
@@ -2347,7 +2354,7 @@ function formatActionText(player, selectedId, ability) {
   const suffix = [hits, heals].filter(Boolean).join(' ')
   if (selectedId === 'skip' || ability.kind === 'skip') return suffix ? `pulou turno ${suffix}` : 'pulou turno'
   if (player.blockedAbilityId && ability.id === 'basic' && state.turn < player.blockedAbilityUntilTurn) return suffix ? `pulou turno ${suffix}` : 'pulou turno'
-  if (ability.kind === 'foresight' && ability.predictedId) return `${ability.name}: ${ability.predictedName || ability.predictedId}`
+  if ((ability.kind === 'foresight' || ability.kind === 'sany-research') && ability.predictedId) return `${ability.name}: ${ability.predictedName || ability.predictedId}`
   return suffix ? `${label} ${suffix}` : label
 }
 
@@ -2365,6 +2372,10 @@ function resolveSelection(player, selectedId, opponent) {
   const [abilityId, predictedId] = String(selectedId || '').split(':')
   let ability = player.character.abilities.find((item) => item.id === abilityId) ?? player.character.abilities[0]
   if (ability.kind === 'foresight' && predictedId) {
+    const predicted = opponent.character.abilities.find((item) => item.id === predictedId)
+    ability = { ...ability, predictedId, predictedName: predicted?.name || predictedId }
+  }
+  if (ability.kind === 'sany-research' && predictedId) {
     const predicted = opponent.character.abilities.find((item) => item.id === predictedId)
     ability = { ...ability, predictedId, predictedName: predicted?.name || predictedId }
   }
@@ -2745,7 +2756,7 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
   else if (ability.kind === 'kiro-double') { player.kiroDoubleArmed = true; consume(player, ability); events.push(`${player.name} preparou Ataque duplo.`) }
   else if (ability.kind === 'sany-lucky') { const damage = Math.floor(200 + Math.random() * 451); const amplified = player.sanyAmplificationUntilTurn >= state.turn ? Math.floor(damage * 1.25) : damage; player.turnDamage = [...(player.turnDamage || []), amplified]; consume(player, ability); dealDamage(opponent, amplified, events, `${player.name} usou Ataque de sorte e causou ${amplified} de dano.`) }
   else if (ability.kind === 'sany-amplify') { player.sanyAmplificationUntilTurn = state.turn + 1; consume(player, ability); events.push(`${player.name} ativou Amplificação.`) }
-  else if (ability.kind === 'sany-research') { player.sanyResearchArmed = true; player.sanyResearchPrediction = randomAbilityId(opponent, player); consume(player, ability); events.push(`${player.name} iniciou Pesquisa.`) }
+  else if (ability.kind === 'sany-research') { player.sanyResearchArmed = true; player.sanyResearchPrediction = ability.predictedId || randomAbilityId(opponent, player); consume(player, ability); events.push(`${player.name} iniciou Pesquisa.`) }
   else if (ability.kind === 'skip') { const recovered = player.character?.id === 'haku' ? healPlayer(player, 50, events) : 0; events.push(recovered > 0 ? `${player.name} pulou turno e ativou Concentração, recuperando ${recovered} HP.` : `${player.name} pulou turno.`) }
   trackVossRumination(opponent, ability, events)
   if (ability.kind !== 'damage') trackCedricFrieza(opponent, ability, events)
