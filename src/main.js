@@ -134,6 +134,22 @@ const characters = {
   },
 }
 
+const codexExtras = {
+  cedric: [
+    { name: 'Frieza (passiva)', detail: 'Se receber 3 ataques básicos consecutivos, recupera 300 de HP. 2 usos.' },
+  ],
+  voss: [
+    { name: 'Rancor (passiva)', detail: 'Se sofrer um dano único maior que 250, ganha 20 de fúria. Ilimitado.' },
+    { name: 'Ruminação (passiva)', detail: 'Se sofrer 3 ataques consecutivos do mesmo tipo, ganha 15 de Fúria. Ilimitado.' },
+  ],
+  zero: [
+    { name: 'Sou o melhor! (passiva)', detail: 'Se você e seu oponente usarem ataque básico ao mesmo tempo, o ataque básico do oponente será anulado, e Zero ganhará 30 de experiência. 7 usos.' },
+  ],
+  ogro: [
+    { name: 'Hora do Rango (passiva)', detail: 'Após o 22º turno, o Ogro ganha +500 de dano permanente em seu Ataque Básico.' },
+  ],
+}
+
 const state = {
   screen: storedAuthToken ? (storedUser?.role === 'admin' ? 'dashboard' : 'home') : 'auth', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
   online: false, socket: null, roomFeedSocket: null, roomCode: '', createdRoomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [], onlinePlayerNames: [],
@@ -464,7 +480,7 @@ function renderCodexModal() {
               <span class="codex-tab-copy"><strong>${character.name}</strong><small>${character.title} · ${character.hp} HP</small></span>
               <span class="codex-arrow">${open ? '−' : '+'}</span>
             </button>
-            <div class="codex-drawer" ${open ? '' : 'hidden'}>${character.abilities.map((ability) => `<article class="codex-ability"><strong>${escapeHtml(ability.name)}</strong><div class="codex-ability-detail">${escapeHtml(ability.detail)}</div></article>`).join('')}</div>
+            <div class="codex-drawer" ${open ? '' : 'hidden'}>${[...character.abilities, ...(codexExtras[character.id] || [])].map((ability) => `<article class="codex-ability"><strong>${escapeHtml(ability.name)}</strong><div class="codex-ability-detail">${escapeHtml(ability.detail)}</div></article>`).join('')}</div>
           </div>`
         }).join('')}
       </div>
