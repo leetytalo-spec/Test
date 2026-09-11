@@ -1,16 +1,13 @@
 package com.leetarena.game;
 
-import android.app.DownloadManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
-import androidx.core.content.ContextCompat;
+import android.content.SharedPreferences;
 import androidx.core.content.FileProvider;
 
 import com.getcapacitor.JSObject;
@@ -20,24 +17,18 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @CapacitorPlugin(name = "ApkUpdater")
 public class ApkUpdaterPlugin extends Plugin {
 
-    private long downloadId = -1;
-    private PluginCall pendingCall;
-
-    private final BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            long completedId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-            if (completedId != downloadId || pendingCall == null) return;
-            try {
-                context.unregisterReceiver(this);
-            } catch (IllegalArgumentException ignored) {}
-            finishDownload(context);
-        }
-    };
+    private static final String WEB_PREFS = "leet-web-update";
 
     @PluginMethod
     public void getVersionInfo(PluginCall call) {
@@ -77,9 +68,120 @@ public class ApkUpdaterPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void getWebVersion(PluginCall call) {
+        SharedPreferences prefs = getContext().getSharedPreferences(WEB_PREFS, Context.MODE_PRIVATE);
+        JSObject result = new JSObject();
+        result.put("webVersion", prefs.getInt("webVersion", 0));
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void installWebUpdate(PluginCall call) {
+        String url = call.getString("url");
+        int version = call.getInt("version", 0);
+        if (url == null || url.isEmpty() || version <= 0) {
+            call.reject("URL e versão do pacote web são obrigatórias.");
+            return;
+        }
+
+        call.setKeepAlive(true);
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                File webRoot = new File(getContext().getFilesDir(), "web");
+                File target = new File(webRoot, String.valueOf(version));
+                deleteRecursive(target);
+                if (!target.mkdirs()) throw new IllegalStateException("Não foi possível preparar o destino.");
+
+                connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setConnectTimeout(20000);
+                connection.setReadTimeout(60000);
+                connection.setUseCaches(false);
+                int status = connection.getResponseCode();
+                if (status < 200 || status >= 300) {
+                    call.reject("Servidor respondeu " + status + ".");
+                    return;
+                }
+
+                try (InputStream input = connection.getInputStream()) {
+                    unzip(input, target);
+                }
+                if (!new File(target, "index.html").exists()) {
+                    call.reject("Pacote web inválido.");
+                    return;
+                }
+
+                getContext().getSharedPreferences(WEB_PREFS, Context.MODE_PRIVATE)
+                    .edit()
+                    .putInt("webVersion", version)
+                    .putString("basePath", target.getAbsolutePath())
+                    .apply();
+
+                if (getActivity() == null) {
+                    call.reject("A tela do aplicativo não está disponível para aplicar a atualização.");
+                    return;
+                }
+                getActivity().runOnUiThread(() -> {
+                    try {
+                        getBridge().setServerBasePath(target.getAbsolutePath());
+                        if (getBridge().getWebView() != null) {
+                            getBridge().getWebView().clearCache(true);
+                            getBridge().getWebView().reload();
+                        }
+                        JSObject result = new JSObject();
+                        result.put("applied", true);
+                        call.resolve(result);
+                    } catch (Exception error) {
+                        call.reject("Não foi possível aplicar o conteúdo atualizado.", error);
+                    }
+                });
+            } catch (Exception error) {
+                call.reject("Falha ao instalar a atualização: " + error.getMessage(), error);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
+    }
+
+    private void unzip(InputStream input, File target) throws Exception {
+        byte[] buffer = new byte[8192];
+        try (ZipInputStream zip = new ZipInputStream(input)) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                File output = new File(target, entry.getName());
+                String targetPath = target.getCanonicalPath() + File.separator;
+                if (!output.getCanonicalPath().startsWith(targetPath)) {
+                    throw new SecurityException("Entrada ZIP inválida.");
+                }
+                if (entry.isDirectory()) {
+                    output.mkdirs();
+                } else {
+                    File parent = output.getParentFile();
+                    if (parent != null) parent.mkdirs();
+                    try (FileOutputStream stream = new FileOutputStream(output)) {
+                        int count;
+                        while ((count = zip.read(buffer)) != -1) stream.write(buffer, 0, count);
+                    }
+                }
+                zip.closeEntry();
+            }
+        }
+    }
+
+    private void deleteRecursive(File file) {
+        if (!file.exists()) return;
+        if (file.isDirectory()) {
+            File[] children = file.listFiles();
+            if (children != null) for (File child : children) deleteRecursive(child);
+        }
+        file.delete();
+    }
+
+    @PluginMethod
     public void downloadAndInstall(PluginCall call) {
         String url = call.getString("url");
         String fileName = call.getString("fileName", "leet-arena-update.apk");
+        String expectedSha256 = call.getString("sha256", "");
         if (url == null || url.isEmpty()) {
             call.reject("URL do pacote de atualização é obrigatória.");
             return;
@@ -91,55 +193,72 @@ public class ApkUpdaterPlugin extends Plugin {
             return;
         }
         File targetFile = new File(targetDir, fileName);
+        File tempFile = new File(targetDir, fileName + ".part");
         if (targetFile.exists()) targetFile.delete();
-
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-        request.setTitle("Atualizando Leet Arena");
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationUri(Uri.fromFile(targetFile));
-        request.setMimeType("application/vnd.android.package-archive");
-
-        DownloadManager manager = (DownloadManager) getContext().getSystemService(Context.DOWNLOAD_SERVICE);
-        if (manager == null) {
-            call.reject("Serviço de download indisponível.");
-            return;
-        }
-
+        if (tempFile.exists()) tempFile.delete();
         call.setKeepAlive(true);
-        pendingCall = call;
-        downloadId = manager.enqueue(request);
-        ContextCompat.registerReceiver(
-            getContext(),
-            downloadReceiver,
-            new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        );
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL(url).openConnection();
+                connection.setConnectTimeout(20000);
+                connection.setReadTimeout(120000);
+                connection.setInstanceFollowRedirects(true);
+                connection.setUseCaches(false);
+                int status = connection.getResponseCode();
+                if (status < 200 || status >= 300) {
+                    call.reject("Servidor respondeu " + status + ".");
+                    return;
+                }
+                long expectedLength = connection.getContentLengthLong();
+                long total = 0;
+                try (InputStream input = connection.getInputStream(); FileOutputStream output = new FileOutputStream(tempFile)) {
+                    byte[] buffer = new byte[16384];
+                    int count;
+                    while ((count = input.read(buffer)) != -1) {
+                        output.write(buffer, 0, count);
+                        total += count;
+                    }
+                    output.flush();
+                    if (total == 0) throw new IllegalStateException("O servidor enviou um arquivo vazio.");
+                }
+                if (!tempFile.exists() || total == 0 || (expectedLength > 0 && total != expectedLength)) {
+                    tempFile.delete();
+                    call.reject("O APK não foi baixado por completo.");
+                    return;
+                }
+                if (!expectedSha256.isEmpty() && !expectedSha256.equalsIgnoreCase(sha256(tempFile))) {
+                    tempFile.delete();
+                    call.reject("A validação do APK falhou.");
+                    return;
+                }
+                if (!tempFile.renameTo(targetFile) || !targetFile.exists() || targetFile.length() == 0) {
+                    tempFile.delete();
+                    call.reject("O APK baixado está vazio.");
+                    return;
+                }
+                installApk(targetFile);
+                JSObject result = new JSObject();
+                result.put("installing", true);
+                call.resolve(result);
+            } catch (Exception error) {
+                call.reject("Falha ao baixar a atualização: " + error.getMessage(), error);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
     }
 
-    private void finishDownload(Context context) {
-        DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-        DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
-        PluginCall call = pendingCall;
-        pendingCall = null;
-        if (manager == null || call == null) return;
-
-        try (Cursor cursor = manager.query(query)) {
-            if (cursor == null || !cursor.moveToFirst()) {
-                call.reject("Não foi possível verificar o download.");
-                return;
-            }
-            int status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
-            if (status != DownloadManager.STATUS_SUCCESSFUL) {
-                call.reject("Falha ao baixar a atualização.");
-                return;
-            }
-            String localUriString = cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI));
-            File apkFile = new File(Uri.parse(localUriString).getPath());
-            installApk(apkFile);
-            JSObject result = new JSObject();
-            result.put("installing", true);
-            call.resolve(result);
+    private String sha256(File file) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] buffer = new byte[16384];
+        try (InputStream input = new java.io.FileInputStream(file)) {
+            int count;
+            while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count);
         }
+        StringBuilder result = new StringBuilder();
+        for (byte value : digest.digest()) result.append(String.format("%02x", value));
+        return result.toString();
     }
 
     private void installApk(File apkFile) {
@@ -150,7 +269,8 @@ public class ApkUpdaterPlugin extends Plugin {
         );
         Intent installIntent = new Intent(Intent.ACTION_VIEW);
         installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-        installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+        installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        installIntent.setClipData(android.content.ClipData.newRawUri("APK", apkUri));
         getContext().startActivity(installIntent);
     }
 }

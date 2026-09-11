@@ -1,11 +1,11 @@
-import { registerPlugin } from '@capacitor/core'
+import { Capacitor, registerPlugin } from '@capacitor/core'
 
 const UPDATE_MANIFEST_URL = 'https://leetarena.tech/updates/latest.json'
 const WEB_UPDATE_MANIFEST_URL = 'https://leetarena.tech/updates/web.json'
 const ApkUpdater = registerPlugin('ApkUpdater')
 
 function getPlugin() {
-  return window.Capacitor?.isNativePlatform?.() ? ApkUpdater : null
+  return Capacitor.isNativePlatform() ? ApkUpdater : null
 }
 
 export async function getInstalledVersion() {
@@ -47,7 +47,16 @@ export async function checkWebUpdate() {
     const response = await fetch(WEB_UPDATE_MANIFEST_URL, { cache: 'no-store' })
     if (!response.ok) return { available: false }
     const manifest = await response.json()
-    const current = Number(localStorage.getItem('leet-web-version') || '0')
+    const plugin = getPlugin()
+    let current = Number(localStorage.getItem('leet-web-version') || '0')
+    if (plugin) {
+      try {
+        const installed = await plugin.getWebVersion()
+        current = Number(installed?.webVersion || 0)
+      } catch {
+        current = 0
+      }
+    }
     return {
       available: Number(manifest.versionCode) > current,
       manifest,
@@ -66,8 +75,18 @@ export async function installWebUpdate(manifest) {
   if (!Number.isFinite(nextVersion)) {
     throw new Error('Versão da atualização web inválida.')
   }
+  const plugin = getPlugin()
+  if (!plugin) {
+    throw new Error('A atualização web precisa ser instalada pelo aplicativo Android.')
+  }
+  const result = await Promise.race([
+    plugin.installWebUpdate({ url: manifest.downloadUrl, version: nextVersion }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('A atualização demorou mais de 75 segundos. Verifique a conexão e tente novamente.')), 75000)),
+  ])
+  if (!result?.applied) {
+    throw new Error('O aplicativo não confirmou a instalação da atualização web.')
+  }
   localStorage.setItem('leet-web-version', String(nextVersion))
-  window.location.reload()
 }
 
 export function onDownloadProgress(callback) {
@@ -99,5 +118,9 @@ export async function installUpdate(manifest, onStatus) {
   }
 
   onStatus?.('Baixando atualização...')
-  await plugin.downloadAndInstall({ url: manifest.downloadUrl, fileName: `leet-arena-${manifest.versionName}.apk` })
+  await plugin.downloadAndInstall({
+    url: manifest.downloadUrl,
+    fileName: `leet-arena-${manifest.versionName}.apk`,
+    sha256: manifest.sha256 || '',
+  })
 }

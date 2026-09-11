@@ -5,10 +5,6 @@ const config: CapacitorConfig = {
   appName: 'Leet Arena',
   webDir: 'dist',
   bundledWebRuntime: false,
-  server: {
-    url: 'https://leetarena.tech',
-    cleartext: false,
-  },
 }
 
 export default config

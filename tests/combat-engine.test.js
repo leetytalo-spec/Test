@@ -17,6 +17,18 @@ test('resolve um turno básico simultâneo', () => {
   assert.equal(combat.turn, 2)
 })
 
+test('Execução do Cedric mata antes da cura do alvo no HP crítico', () => {
+  const combat = createCombat(players(), 7)
+  const voss = combat.players[1]
+  voss.hp = 250
+  voss.rage = 30
+
+  resolveCombatTurn(combat, ['execute', 'heal'])
+
+  assert.equal(voss.hp, 0)
+  assert.equal(combat.result, 'player-1-win')
+})
+
 test('Marcar Alvo do Cedric explode no segundo ataque básico sequencial', () => {
   const combat = createCombat(players(), 7)
   const voss = combat.players[1]
@@ -142,6 +154,31 @@ test('Progressão do Nox adiciona 1 marca passiva a cada 5 turnos', () => {
 
   resolveCombatTurn(combat, ['skip', 'skip'])
   assert.equal(combat.players[1].noxMarks, 1)
+})
+
+test('Reconstrução do Nox clona cura passivamente entre 8 e 10 marcas e para após Acionador', () => {
+  const combat = createCombat([
+    { index: 0, userId: 1, name: 'Nox', characterId: 'nox' },
+    { index: 1, userId: 2, name: 'Voss', characterId: 'voss' },
+  ], 7)
+  const nox = combat.players[0]
+  const voss = combat.players[1]
+  nox.hp = 900
+  voss.hp = 800
+  voss.rage = 60
+
+  for (let turn = 0; turn < 8; turn += 1) resolveCombatTurn(combat, ['marked', 'skip'])
+  resolveCombatTurn(combat, ['skip', 'heal'])
+  assert.equal(voss.hp, 1050)
+  assert.equal(nox.hp, 1150)
+
+  resolveCombatTurn(combat, ['trigger', 'skip'])
+  nox.hp = 900
+  voss.hp = 800
+  voss.rage = 60
+  resolveCombatTurn(combat, ['skip', 'heal'])
+  assert.equal(voss.hp, 1050)
+  assert.equal(nox.hp, 900)
 })
 
 test('Kyn usa Premonição para carregar Dreno no ataque básico sem acumular', () => {

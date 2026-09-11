@@ -11,6 +11,7 @@
     "test:combat": "node --test tests/combat-engine.test.js",
     "online": "concurrently \"npm run server\" \"npm run dev -- --host 0.0.0.0\"",
     "build": "vite build",
+    "deploy:web": "./scripts/deploy-web.sh",
     "android:sync": "npm run build && cap sync android",
     "android:open": "cap open android",
     "android:debug": "npm run android:sync && cap run android",

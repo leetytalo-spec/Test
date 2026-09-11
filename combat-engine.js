@@ -78,6 +78,7 @@ export function isActionAvailable(combat, playerIndex, action) {
   if (actionId === 'skip' || actionId === 'basic') return true
   if (actionId === 'best') return false
   if (player.characterId === 'kyn' && (actionId === 'patience' || actionId === 'tribute')) return false
+  if (player.characterId === 'nox' && (actionId === 'reconstruction' || actionId === 'progression')) return false
   if (player.characterId === 'nox' && actionId === 'pressure' && player.noxPressure <= 0) return false
   if (player.uses[actionId] === 0) return false
   if (actionId === 'impulse' && player.rage < 55) return false
@@ -153,6 +154,12 @@ function heal(combat, target, amount, events) {
   if (actual) {
     combat.players.forEach((player) => {
       if (player !== target && player.characterId === 'kyn' && player.harvestTurns > 0) player.harvestHealing += actual
+    })
+    combat.players.forEach((player) => {
+      if (player === target || player.characterId !== 'nox' || target.noxMarks < 8 || target.noxMarks > 10) return
+      const copied = Math.min(player.maxHp - player.hp, actual)
+      player.hp += copied
+      if (copied) events.push(`${player.name} copiou ${copied} de cura com Reconstrução.`)
     })
     events.push(`${target.name} recuperou ${actual} HP.`)
   }
@@ -272,7 +279,10 @@ function applyAction(combat, player, opponent, action, opponentAction, events) {
     use(player, normalized); opponent.marked = true; opponent.markedHits = 0; return
   }
   if (normalized === 'execute') {
-    use(player, normalized); if (opponent.hp <= opponent.maxHp * .25) opponent.hp = 0; return
+    use(player, normalized)
+    player.pendingExecute = true
+    player.pendingExecuteThresholdHp = opponent.hp
+    return
   }
   if (normalized === 'bindings' || normalized === 'pain-hunger' || normalized === 'provoke') {
     use(player, normalized); opponent.forcedBasicTurns = normalized === 'bindings' ? 2 : 1; opponent.basicBonus += normalized === 'bindings' ? 100 : 70; return
@@ -292,7 +302,7 @@ function applyAction(combat, player, opponent, action, opponentAction, events) {
   if (normalized === 'trigger') { const triggerDamage = opponent.noxMarks * 60; player.lastDamage = [triggerDamage]; damage(combat, opponent, triggerDamage, events); opponent.noxMarks = 0; player.noxLocked = false; return }
   if (normalized === 'pressure' && player.noxPressure > 0 && predictedActionId(action)) { player.noxPressure -= 1; opponent.blockedAction = predictedActionId(action); opponent.blockedSource = 'pressure'; opponent.blockedTurns = 1; return }
   if (normalized === 'progression') return
-  if (normalized === 'reconstruction') { player.basicBonus += opponent.noxMarks >= 8 ? 30 : 0; return }
+  if (normalized === 'reconstruction') return
   if (normalized === 'dodge') { player.dodge = true; use(player, normalized); return }
   if (normalized === 'analysis' && opponentAction !== 'basic') { player.zeroExperience += 30; player.zeroLevel = player.zeroExperience >= 340 ? 5 : player.zeroExperience >= 250 ? 4 : player.zeroExperience >= 130 ? 3 : player.zeroExperience >= 50 ? 2 : 1; return }
   if (normalized === 'best' && action === opponentAction && opponentAction === 'basic') { player.basicBonus += 30; return }
@@ -340,6 +350,20 @@ function tickHarvest(player) {
   }
 }
 
+function resolvePendingExecute(combat, player, opponent, events) {
+  if (!player.pendingExecute) return
+  player.pendingExecute = false
+  const thresholdHp = typeof player.pendingExecuteThresholdHp === 'number' ? player.pendingExecuteThresholdHp : opponent.hp
+  const shouldExecute = thresholdHp <= opponent.maxHp * .25
+  if (shouldExecute) {
+    opponent.hp = 0
+    events.push(`${player.name} executou ${opponent.name}.`)
+  } else {
+    events.push('Execução! falhou: o alvo ainda está acima de 25% de HP.')
+  }
+  player.pendingExecuteThresholdHp = null
+}
+
 export function resolveCombatTurn(combat, actions) {
   if (combat.result) return combat
   const first = combat.players[0]
@@ -360,6 +384,8 @@ export function resolveCombatTurn(combat, actions) {
   }
   applyAction(combat, first, second, actionOne, actionTwo, events)
   applyAction(combat, second, first, actionTwo, actionOne, events)
+  resolvePendingExecute(combat, first, second, events)
+  resolvePendingExecute(combat, second, first, events)
   tickHarvest(first)
   tickHarvest(second)
   updateKynPassives(first, actionTwo)

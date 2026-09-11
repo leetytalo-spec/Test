@@ -5,7 +5,7 @@ import { join, extname, normalize } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { URL } from 'node:url'
 
-// Simula um CDN local: entrega vídeos por HTTP Range (streaming) e aceita upload para o painel de admin.
+// Simula um CDN local: entrega imagens e ícones e aceita upload para o painel de admin.
 const port = Number(process.env.MEDIA_PORT || 8788)
 const mediaRoot = join(process.cwd(), 'media', 'videos')
 const dataRoot = join(process.cwd(), 'data')
@@ -33,8 +33,8 @@ authDb.exec(`
 `)
 authDb.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(Date.now())
 
-const mimeTypes = { '.mp4': 'video/mp4', '.webm': 'video/webm', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }
-const uploadExtensions = { 'video/mp4': '.mp4', 'video/webm': '.webm', 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp' }
+const mimeTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }
+const uploadExtensions = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp' }
 const slugPattern = /^[a-z0-9_-]+$/i
 const maxUploadBytes = Number(process.env.MAX_UPLOAD_BYTES || 250 * 1024 * 1024)
 let manifestCache = null
@@ -197,30 +197,14 @@ function handleUpload(req, res, url) {
   writeStream.on('error', () => { res.writeHead(500); res.end('Falha ao salvar o vídeo.') })
 }
 
-function serveVideo(req, res, requestedPath) {
+function serveMedia(req, res, requestedPath) {
   const filePath = join(mediaRoot, requestedPath)
-  if (!existsSync(filePath)) { res.writeHead(404); return res.end('Vídeo não encontrado.') }
+  if (!existsSync(filePath)) { res.writeHead(404); return res.end('Arquivo não encontrado.') }
 
   const { size } = statSync(filePath)
   const contentType = mimeTypes[extname(filePath)] || 'application/octet-stream'
-  const range = req.headers.range
-
-  if (!range) {
-    res.writeHead(200, { 'Content-Length': size, 'Content-Type': contentType, 'Accept-Ranges': 'bytes' })
-    return createReadStream(filePath).pipe(res)
-  }
-
-  const [startRaw, endRaw] = range.replace(/bytes=/, '').split('-')
-  const start = Number(startRaw)
-  const end = endRaw ? Number(endRaw) : size - 1
-
-  res.writeHead(206, {
-    'Content-Range': `bytes ${start}-${end}/${size}`,
-    'Accept-Ranges': 'bytes',
-    'Content-Length': end - start + 1,
-    'Content-Type': contentType,
-  })
-  createReadStream(filePath, { start, end }).pipe(res)
+  res.writeHead(200, { 'Content-Length': size, 'Content-Type': contentType })
+  return createReadStream(filePath).pipe(res)
 }
 
 const server = createServer((req, res) => {
@@ -265,10 +249,10 @@ const server = createServer((req, res) => {
 
   const requestedPath = normalize(decodeURIComponent(url.pathname))
   if (requestedPath.includes('..')) { res.writeHead(400); return res.end('Caminho inválido.') }
-  serveVideo(req, res, requestedPath)
+  serveMedia(req, res, requestedPath)
 })
 
 server.listen(port, () => {
-  console.log(`Media CDN (simulado) em http://localhost:${port}`)
-  console.log(`Coloque vídeos em: ${mediaRoot}`)
+  console.log(`Media CDN em http://localhost:${port}`)
+  console.log(`Pasta de mídia: ${mediaRoot}`)
 })
