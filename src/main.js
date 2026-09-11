@@ -1117,7 +1117,7 @@ function isAbilityUnavailable(player, opponent, ability) {
     || (ability.kind === 'broken-limit' && state.turn <= 11)
     || (ability.kind === 'nox-trigger' && !opponent.noxMarks)
     || (ability.kind === 'nox-pressure' && player.noxPressureCharges <= 0)
-    || (ability.kind === 'retaliation' && !(player.brickDodges >= 2 && player.brickPunchesReceived >= 6 && player.brickKicksReceived >= 2))
+    || (ability.kind === 'retaliation' && !(player.brickDodges >= 2 && player.brickPunchesLanded >= 6 && player.brickKicksLanded >= 2))
 }
 
 function randomAbilityId(player, opponent) {
@@ -1257,7 +1257,7 @@ function getPlayerStatusEffects(player) {
     if (player.noxReconstructionActive) buffs.push('Reconstrução')
   }
   if (player.character?.id === 'brick') {
-    warnings.push(`Retaliação S ${Math.min(player.brickPunchesReceived, 6)}/6 C ${Math.min(player.brickKicksReceived, 2)}/2 E ${Math.min(player.brickDodges, 2)}/2`)
+    warnings.push(`Retaliação S ${Math.min(player.brickPunchesLanded, 6)}/6 C ${Math.min(player.brickKicksLanded, 2)}/2 E ${Math.min(player.brickDodges, 2)}/2`)
     if (player.nextTurnDodge) buffs.push('Esquiva')
     if (player.forcedBasicSource === 'provoke') debuffs.push('Provocar')
   }
@@ -2113,8 +2113,8 @@ function createPlayer(character) {
     noxPressureCharges: 0,
     noxMarkLocked: false,
     brickDodges: 0,
-    brickPunchesReceived: 0,
-    brickKicksReceived: 0,
+    brickPunchesLanded: 0,
+    brickKicksLanded: 0,
     brickCounterPunches: 0,
     nextTurnDodge: false,
     forcedBasicSource: '',
@@ -2700,9 +2700,9 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     const totalDamage = damage + markBonus
     if (ability.uses !== undefined) consume(player, ability)
     const hit = dealDamage(opponent, totalDamage + luckBonus, events, `${player.name} causou ${totalDamage + luckBonus} de dano.`)
-    if (hit && opponent.character?.id === 'brick') {
-      if (ability.damageType === 'punch') opponent.brickPunchesReceived += 1
-      if (ability.damageType === 'kick') opponent.brickKicksReceived += 1
+    if (hit && player.character?.id === 'brick') {
+      if (ability.damageType === 'punch') player.brickPunchesLanded += 1
+      if (ability.damageType === 'kick') player.brickKicksLanded += 1
     }
     if (luckBonus) events.push(`${player.name} ativou Sorte e causou 100 de dano extra.`)
     if (player.character?.id === 'kiro' && ability.id === 'basic' && player.kiroDoubleArmed) {
@@ -2770,7 +2770,7 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
   else if (ability.kind === 'nox-reconstruction') { player.noxReconstructionActive = opponent.noxMarks >= 8; events.push(`${player.name} ativou Reconstrução.`) }
   else if (ability.kind === 'nox-progression') { if (state.turn % 5 === 0) opponent.noxMarks += 1; events.push(`${player.name} verificou Progressão.`) }
   else if (ability.kind === 'counter') { events.push(`${player.name} preparou Contra-Golpe.`) }
-  else if (ability.kind === 'retaliation') { if (player.brickDodges >= 2 && player.brickPunchesReceived >= 6 && player.brickKicksReceived >= 2) { dealDamage(opponent, 700, events, `${player.name} ativou Retaliação e causou 700 de dano.`); player.uses = Object.fromEntries(player.character.abilities.filter((item) => item.uses !== undefined).map((item) => [item.id, item.uses])); player.brickDodges = 0; player.brickPunchesReceived = 0; player.brickKicksReceived = 0 } }
+  else if (ability.kind === 'retaliation') { if (player.brickDodges >= 2 && player.brickPunchesLanded >= 6 && player.brickKicksLanded >= 2) { dealDamage(opponent, 700, events, `${player.name} ativou Retaliação e causou 700 de dano.`); player.uses = Object.fromEntries(player.character.abilities.filter((item) => item.uses !== undefined).map((item) => [item.id, item.uses])); player.brickDodges = 0; player.brickPunchesLanded = 0; player.brickKicksLanded = 0 } }
   else if (ability.kind === 'dodge') { player.nextTurnDodge = true; consume(player, ability); events.push(`${player.name} preparou uma Esquiva.`) }
   else if (ability.kind === 'bindings') { opponent.forcedBasicTurns = 2; opponent.forcedBasicStartsTurn = state.turn + 1; opponent.basicDamageBonus = 100; opponent.basicDamageBonusExpiresTurn = state.turn + 3; consume(player, ability); events.push(`${player.name} amarrou ${opponent.name}: ele será forçado a usar 2 ataques básicos nos próximos 2 turnos e receberá +100 em cada um.`) }
   else if (ability.kind === 'deny') { player.rage -= 25; const candidate = opponent.character.abilities.find((item) => item.id === state.denyTargetAbilityId && item.id !== 'basic' && item.kind !== 'rage') || opponent.character.abilities.find((item) => item.id !== 'basic' && item.kind !== 'rage'); if (candidate) { opponent.blockedAbilityId = candidate.id; opponent.blockedAbilitySource = 'denial'; opponent.blockedAbilityUntilTurn = state.turn + 3; events.push(`${player.name} negou ${candidate.name} de ${opponent.name} pelos próximos 2 turnos.`) } else { events.push(`${player.name} tentou negar, mas ${opponent.name} não tinha habilidade ativa para bloquear.`) } state.denyTargetAbilityId = '' }
