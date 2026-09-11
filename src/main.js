@@ -918,6 +918,7 @@ function renderBattle() {
       <div class="arena-column">
         ${lastActionPanel()}
         <div class="arena-scene">
+          ${hpFeedbackMarkup()}
         </div>
         ${finished ? resultPanel() : actionPanel(activePlayer, state.players[activeIndex === 0 ? 1 : 0])}
       </div>
@@ -941,6 +942,17 @@ function hpDeltaBadge(index) {
     ${delta.damage ? `<b class="hp-delta damage">-${delta.damage}</b>` : ''}
     ${delta.heal ? `<b class="hp-delta heal">+${delta.heal}</b>` : ''}
   </span>`
+}
+
+function hpFeedbackMarkup() {
+  const feedback = (state.hpDeltas || []).map((delta, index) => {
+    if (!delta) return ''
+    const parts = []
+    if (delta.damage) parts.push(`<b class="hp-feedback-item damage">-${delta.damage}</b>`)
+    if (delta.heal) parts.push(`<b class="hp-feedback-item heal">+${delta.heal}💚</b>`)
+    return `<span class="hp-feedback-slot player-${index}">${parts.join('')}</span>`
+  }).join('')
+  return feedback ? `<div class="hp-feedback" aria-live="polite">${feedback}</div>` : ''
 }
 
 function renderPressurePickerModal() {
