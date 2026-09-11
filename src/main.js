@@ -2434,6 +2434,8 @@ function triggerPredatory(player, opponent, ability, opponentAbility, events) {
   if ((!player.pendingPredatory && !selectedPredatory) || opponentAbility.id !== 'basic') return false
   player.pendingPredatory = false
   player.turnActionLabel = 'Ativou Ataque Predatório'
+  player.turnDamage = []
+  player.turnHealing = []
   if (selectedPredatory) consume(player, ability)
   player.turnDamage = [...(player.turnDamage || []), 160]
   dealDamage(opponent, 160, events, `${player.name} ativou o Ataque predatório e causou 160 de dano.`)
@@ -2719,7 +2721,7 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
       dealDamage(player, danceDamage, events, `${opponent.name} executou Dança da lâmina e causou ${danceHits.map((value) => `${value} de dano`).join(' + ')}.`)
     }
     if (player.character?.id === 'kyn' && kynDrainDamage > 0 && hit) {
-      const healed = Math.floor(kynDrainDamage * .75)
+      const healed = Math.floor(totalDamage * .75)
       healPlayer(player, healed, events)
       player.drainAvailable = 0
       player.drainGainedThisTurn = true
