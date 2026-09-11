@@ -380,11 +380,15 @@ function renderGameSetupMenu() {
   const rank = getPlayerRank(username)
   const unread = getUnreadMailCount()
   return `<div class="identity-corner">
-    <div class="identity-item identity-stack">
+    <div class="identity-item">
       <button class="profile-avatar-corner" type="button" data-action="open-profile" title="Perfil do jogador"><span class="account-rune">${avatar ? `<img src="${avatar}" alt="Avatar de ${escapeHtml(nickname)}">` : initials}</span></button>
       <small>Perfil</small>
+    </div>
+    <div class="identity-item">
       <button class="rank-badge shop-badge" type="button" data-action="open-coming-soon" data-coming-soon="Loja" title="Loja"><i data-lucide="Store"></i></button>
       <small>Loja</small>
+    </div>
+    <div class="identity-item">
       <button class="rank-badge chat-badge" type="button" data-action="open-chat" title="Chat geral"><i data-lucide="MessageCircle"></i></button>
       <small>Chat</small>
     </div>
@@ -1955,6 +1959,7 @@ async function applyUpdate() {
 async function refreshWebUpdateNotice() {
   const web = await checkWebUpdate()
   if (!web.available) return
+  if (state.updateAvailable && state.updateManifest?.versionCode === web.manifest.versionCode) return
   state.updateAvailable = true
   state.updateManifest = { ...web.manifest, source: 'web' }
   render()
@@ -2854,3 +2859,7 @@ getInstalledVersion().then((info) => {
     if (state.screen === 'home') render()
   }
 })
+
+setInterval(() => {
+  if (state.currentUser && state.screen !== 'auth') refreshWebUpdateNotice()
+}, 30000)

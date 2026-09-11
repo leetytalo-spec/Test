@@ -316,7 +316,7 @@ html, body { overflow: hidden; }
 .room-status { max-width: 92px; color: #8c9993; text-align: right; line-height: 1.2; }
 .profile-avatar-corner { position: relative; padding: 0; border: 0; background: transparent; }
 .setup-corner { position: fixed; top: 14px; right: 16px; z-index: 30; }
-.identity-corner { position: fixed; top: 14px; left: 16px; z-index: 30; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; max-width: calc(100vw - 76px); }
+.identity-corner { position: fixed; top: 14px; left: 16px; z-index: 30; display: grid; grid-template-columns: repeat(8, minmax(34px, auto)); align-items: start; gap: 10px; max-width: calc(100vw - 76px); padding: 6px 8px; border: 1px solid rgba(215,173,46,.28); border-radius: 0 12px 0 12px; background: rgba(8, 12, 11, .72); backdrop-filter: blur(6px); }
 .identity-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .identity-stack { gap: 6px; }
 .identity-stack .shop-badge { margin-top: 4px; }
@@ -420,7 +420,7 @@ html, body { overflow: hidden; }
 @keyframes codex-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 580px) {
-    .identity-corner { top: 8px; left: 8px; gap: 8px; max-width: calc(100vw - 60px); }
+	.identity-corner { top: 8px; left: 8px; gap: 6px; grid-template-columns: repeat(4, minmax(28px, 1fr)); max-width: calc(100vw - 60px); padding: 4px; }
     .identity-item small { font-size: 8px; }
     .setup-corner { top: 8px; right: 8px; }
     .account-rune { width: 64px; height: 64px; font-size: 16px; }
@@ -433,7 +433,6 @@ html, body { overflow: hidden; }
 }
 @media (max-width: 380px) {
     .identity-corner { gap: 6px; }
-    .identity-stack { gap: 4px; }
     .account-rune { width: 52px; height: 52px; font-size: 14px; }
     .rank-badge, .setup-gear { width: 30px; height: 30px; }
     .rank-badge i, .setup-gear svg { width: 14px; height: 14px; }
