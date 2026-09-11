@@ -8,6 +8,35 @@ function getPlugin() {
   return Capacitor.isNativePlatform() ? ApkUpdater : null
 }
 
+export async function authRequest(path, options = {}) {
+  const plugin = getPlugin()
+  if (plugin) {
+    try {
+      const result = await plugin.authRequest({
+        path,
+        method: options.method || 'GET',
+        token: options.token || '',
+        body: options.body || '',
+      })
+      return {
+        ok: result.status >= 200 && result.status < 300,
+        status: result.status,
+        json: async () => result.body ? JSON.parse(result.body) : {},
+      }
+    } catch (error) {
+      if (!String(error?.message || error).includes('not implemented')) throw error
+    }
+  }
+  return fetch(`https://leetarena.tech/media${path}`, {
+    method: options.method || 'GET',
+    headers: {
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+    },
+    body: options.body || undefined,
+  })
+}
+
 export async function getInstalledVersion() {
   const plugin = getPlugin()
   if (!plugin) return null

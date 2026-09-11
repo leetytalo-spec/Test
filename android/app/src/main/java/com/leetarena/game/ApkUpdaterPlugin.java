@@ -17,11 +17,14 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -29,6 +32,61 @@ import java.util.zip.ZipInputStream;
 public class ApkUpdaterPlugin extends Plugin {
 
     private static final String WEB_PREFS = "leet-web-update";
+    private static final String AUTH_BASE_URL = "https://leetarena.tech/media";
+
+    @PluginMethod
+    public void authRequest(PluginCall call) {
+        String path = call.getString("path", "");
+        String method = call.getString("method", "GET");
+        String token = call.getString("token", "");
+        String body = call.getString("body", "");
+        if (!path.matches("^/(auth/(login|register|session|logout)|admin/session)$")) {
+            call.reject("Rota de autenticação inválida.");
+            return;
+        }
+
+        call.setKeepAlive(true);
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL(AUTH_BASE_URL + path).openConnection();
+                connection.setConnectTimeout(20000);
+                connection.setReadTimeout(30000);
+                connection.setRequestMethod(method);
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setUseCaches(false);
+                if (!token.isEmpty()) connection.setRequestProperty("Authorization", "Bearer " + token);
+                if (!body.isEmpty()) {
+                    connection.setDoOutput(true);
+                    connection.setRequestProperty("Content-Type", "application/json");
+                    try (OutputStream output = connection.getOutputStream()) {
+                        output.write(body.getBytes(StandardCharsets.UTF_8));
+                    }
+                }
+
+                int status = connection.getResponseCode();
+                InputStream responseStream = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
+                String responseBody = responseStream == null ? "" : readText(responseStream);
+                JSObject result = new JSObject();
+                result.put("status", status);
+                result.put("body", responseBody);
+                call.resolve(result);
+            } catch (Exception error) {
+                call.reject("Falha na conexão com o servidor: " + error.getMessage(), error);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
+    }
+
+    private String readText(InputStream input) throws Exception {
+        try (InputStream stream = input; ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[4096];
+            int count;
+            while ((count = stream.read(buffer)) != -1) output.write(buffer, 0, count);
+            return output.toString(StandardCharsets.UTF_8.name());
+        }
+    }
 
     @PluginMethod
     public void getVersionInfo(PluginCall call) {

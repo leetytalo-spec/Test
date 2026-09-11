@@ -1,6 +1,6 @@
 import './style.css'
 import { Capacitor } from '@capacitor/core'
-import { checkForUpdate, checkWebUpdate, installWebUpdate, installUpdate, getInstalledVersion, onDownloadProgress, exitApp } from './updater.js'
+import { authRequest, checkForUpdate, checkWebUpdate, installWebUpdate, installUpdate, getInstalledVersion, onDownloadProgress, exitApp } from './updater.js'
 import { Activity, Ban, Bell, BookOpen, ChevronDown, Clock3, Flame, Heart, Image, LayoutDashboard, Link, LogOut, Mail, MessageCircle, Plus, Radio, ScrollText, Search, Send, Settings, ShieldCheck, Skull, Sparkles, Store, Swords, Target, Trash2, Trophy, UserRound, Users, Wifi, Zap, createIcons } from 'lucide'
 
 // No app instalado (Android) não existe "localhost" do PC — precisa apontar para o servidor real.
@@ -2042,9 +2042,8 @@ async function authenticateAccount(event) {
   state.authError = ''
   render()
   try {
-    const response = await fetch(`${MEDIA_BASE_URL}/auth/${state.authMode}`, {
+    const response = await authRequest(`/auth/${state.authMode}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     })
     const result = await response.json()
@@ -2075,7 +2074,7 @@ function clearStoredSession() {
 }
 
 async function logoutAccount(message = '') {
-  if (state.authToken) fetch(`${MEDIA_BASE_URL}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${state.authToken}` } }).catch(() => {})
+  if (state.authToken) authRequest('/auth/logout', { method: 'POST', token: state.authToken }).catch(() => {})
   clearOnlineSession()
   clearStoredSession()
   state.authError = typeof message === 'string' ? message : ''
@@ -2086,7 +2085,7 @@ async function logoutAccount(message = '') {
 async function restoreSession() {
   if (!state.authToken) return
   try {
-    const response = await fetch(`${MEDIA_BASE_URL}/auth/session`, { headers: { Authorization: `Bearer ${state.authToken}` } })
+    const response = await authRequest('/auth/session', { token: state.authToken })
     if (!response.ok) throw new Error('expired')
     const { user } = await response.json()
     persistSession(state.authToken, user)
