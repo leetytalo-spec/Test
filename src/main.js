@@ -1229,7 +1229,7 @@ function getPlayerStatusEffects(player) {
     if (player.noxReconstructionActive) buffs.push('Reconstrução')
   }
   if (player.character?.id === 'brick') {
-    if (player.brickDodges > 0 || player.brickPunchesReceived > 0 || player.brickKicksReceived > 0) warnings.push(`Retaliação S: ${player.brickPunchesReceived} C: ${player.brickKicksReceived} E: ${player.brickDodges}`)
+    warnings.push(`Retaliação: S ${Math.min(player.brickPunchesReceived, 6)}/6 E ${Math.min(player.brickDodges, 2)}/2 C ${Math.min(player.brickKicksReceived, 2)}/2`)
     if (player.nextTurnDodge) buffs.push('Esquiva')
     if (player.forcedBasicSource === 'provoke') debuffs.push('Provocar')
   }
