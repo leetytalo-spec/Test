@@ -914,6 +914,7 @@ function renderBattle() {
   const p2Percent = Math.min(100, Math.max(0, p2.hp / p2.maxHp * 100))
   return `<section class="battle-shell">
     <header class="battle-topbar"><div class="top-player"><strong>${battleSlotLabel(0, p1)}</strong>${hpDeltaBadge(0)}<div class="top-hp"><i style="width:${p1Percent}%; background:${getHpBarColor(p1Percent)}"></i><span class="top-hp-value">${p1.hp}/${p1.maxHp}</span></div></div><div class="turn-count">TURNO <strong>${state.turn}</strong><span class="turn-timer">${Math.max(0, state.turnTimeLeft)}s</span></div><div class="top-player opponent"><strong>${battleSlotLabel(1, p2)}</strong>${hpDeltaBadge(1)}<div class="top-hp"><i style="width:${p2Percent}%; background:${getHpBarColor(p2Percent)}"></i><span class="top-hp-value">${p2.hp}/${p2.maxHp}</span></div></div></header>
+    ${renderBattleUpdateNotice(finished)}
     <div class="battle-layout">
       <div class="arena-column">
         ${lastActionPanel()}
@@ -933,6 +934,11 @@ function renderBattle() {
     ${renderActionNoticeModal()}
     ${state.chatOpen ? renderChatModal() : ''}
   </section>`
+}
+
+function renderBattleUpdateNotice(finished) {
+  if (!state.online || finished || !state.updateAvailable || state.updateManifest?.source !== 'web') return ''
+  return '<p class="battle-update-notice">ATUALIZAÇÃO DISPONÍVEL - TERMINE A PARTIDA E REINICIE O JOGO PARA APLICAR</p>'
 }
 
 function hpDeltaBadge(index) {

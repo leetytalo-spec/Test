@@ -93,6 +93,7 @@ html, body { overflow: hidden; }
 .home-view .home-shell { min-height: 100svh; }
 .battle-shell { height: 100svh; min-height: 0; overflow: hidden; padding: 0 10px 6px; }
 .battle-topbar { min-height: 70px; height: 70px; padding-top: 8px; border-bottom-width: 2px; gap: 8px; }
+.battle-update-notice { position: absolute; top: 74px; left: 50%; z-index: 30; width: min(94%, 620px); margin: 0; padding: 7px 10px; transform: translateX(-50%); border: 1px solid #d7ad2e; background: rgba(10, 14, 15, .92); color: #f5d98d; text-align: center; font: 700 9px 'DM Mono', monospace; letter-spacing: .05em; line-height: 1.3; }
 .top-player strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }.top-hp { height: 13px; margin-top: 5px; }.top-hp-value { font-size: 9px; right: 5px; }.top-player.opponent .top-hp-value { left: 5px; }.turn-count { font-size: 13px; }
 .last-action { margin: 18px 0 5px; height: 38px; min-height: 38px; border-width: 2px; overflow: hidden; }.speaker-icon { top: -30px; width: 30px; height: 30px; font-size: 12px; }.last-action-title { width: 132px; margin: -13px auto 3px; padding: 2px; border-width: 1px; font-size: 9px; }.last-action-copy { padding: 0 6px 4px; font-size: 8px; line-height: 1.05; grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr); }.last-action-copy strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.crossed-swords { font-size: 12px; }
 .arena-scene { min-height: 0; height: 34svh; margin-top: 4px; border-width: 2px; background-size: cover; }
