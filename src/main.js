@@ -357,7 +357,12 @@ function renderGameHome() {
         <p class="intro welcome-line">Bem-vindo(a) ao <span>Leet Arena</span></p>
         <p class="intro choose-mode">Escolha o modo:</p>
       </div>
-      <div class="mode-selector rpg-mode-selector"><button class="primary-button ${isOnlineMode ? 'active' : ''}" data-action="show-online-mode">DUELO</button><button class="primary-button secondary ${isOfflineMode ? 'active' : ''}" data-action="show-offline-mode">MODO TESTE</button><button class="primary-button secondary ${isBattle2v2Mode ? 'active' : ''}" data-action="show-battle2v2-mode">BATALHA 2X2</button><button class="primary-button secondary ${isTournamentMode ? 'active' : ''}" data-action="show-tournament-mode">TORNEIOS</button></div>
+      <div class="mode-selector rpg-mode-selector">
+        <button class="primary-button ${isOnlineMode ? 'active' : ''}" data-action="show-online-mode"><i data-lucide="Swords"></i><span>DUELO</span></button>
+        <button class="primary-button secondary ${isOfflineMode ? 'active' : ''}" data-action="show-offline-mode"><i data-lucide="Target"></i><span>MODO TESTE</span></button>
+        <button class="primary-button secondary ${isBattle2v2Mode ? 'active' : ''}" data-action="show-battle2v2-mode"><i data-lucide="Users"></i><span>BATALHA 2X2</span></button>
+        <button class="primary-button secondary ${isTournamentMode ? 'active' : ''}" data-action="show-tournament-mode"><i data-lucide="Trophy"></i><span>TORNEIOS</span></button>
+      </div>
     </div>
     ${modeOpen ? `<div class="mode-drawer-backdrop ${entering ? 'is-entering' : ''}" data-action="close-mode-drawer"></div>
     <aside class="mode-drawer ${entering ? 'is-entering' : ''}" role="dialog" aria-label="${modeTitle}">

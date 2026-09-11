@@ -273,16 +273,19 @@ html, body { overflow: hidden; }
 .rpg-home::before { background: linear-gradient(90deg, rgba(5,7,8,.92), rgba(5,7,8,.62) 45%, rgba(31,17,9,.72)), radial-gradient(circle at 72% 28%, rgba(215,173,46,.2), transparent 38%); }
 .rpg-play-panel { border: 2px solid #d7ad2e; border-radius: 0 22px 0 22px; background: linear-gradient(180deg, rgba(18, 16, 13, .94), rgba(8, 10, 11, .91)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), 0 22px 60px rgba(0,0,0,.48); }
 .rpg-play-panel::before { content: ''; position: absolute; inset: 8px; border: 1px solid rgba(215,173,46,.22); border-radius: 0 16px 0 16px; pointer-events: none; }
-.rpg-mode-selector { gap: 10px; grid-template-columns: 1fr; }
+.rpg-mode-selector { gap: 10px; grid-template-columns: repeat(2, 1fr); }
 .home-welcome { display: flex; flex-direction: column; gap: 8px; max-width: 600px; margin: 0 0 18px; }
 .home-welcome .welcome-line { margin: 0; color: #f7f3eb; font: 700 clamp(22px, 3vw, 42px) 'Barlow Condensed', sans-serif; letter-spacing: .02em; }
 .home-welcome .welcome-line span { color: #ff6b45; }
 .home-welcome .choose-mode { margin: 0; color: #d7ad2e; font: 600 18px 'Barlow Condensed', sans-serif; }
 .home-welcome .intro { margin: 0; max-width: none; }
-.rpg-mode-selector .primary-button { width: 100%; min-height: 52px; border: 2px solid #d7ad2e; border-radius: 0 14px 0 14px; background: linear-gradient(135deg, #862119, #d8482e); color: #fff7e8; text-shadow: 0 1px 1px #3a0803; }
+.rpg-mode-selector .primary-button { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 56px; margin: 0; padding: 10px 12px; border: 2px solid #d7ad2e; border-radius: 0 14px 0 14px; background: linear-gradient(135deg, #862119, #d8482e); color: #fff7e8; text-shadow: 0 1px 1px #3a0803; text-align: center; }
+.rpg-mode-selector .primary-button svg, .rpg-mode-selector .primary-button i { width: 18px; height: 18px; flex-shrink: 0; }
+.rpg-mode-selector .primary-button span { float: none; font-size: inherit; line-height: 1.15; }
 .rpg-mode-selector .primary-button.secondary { background: linear-gradient(135deg, #1d2726, #0d1212); color: #dfe6df; }
 .rpg-mode-selector .primary-button.active { box-shadow: 0 0 0 2px rgba(255,255,255,.09), 0 0 22px rgba(255, 107, 69, .28); }
 .rpg-mode-selector .primary-button:active { border-color: #ff6b45; box-shadow: 0 0 0 2px rgba(255, 107, 69, .35); }
+@media (max-width: 420px) { .rpg-mode-selector { grid-template-columns: 1fr; } }
 .mode-drawer-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(4, 8, 7, .6); backdrop-filter: blur(4px); }
 .mode-drawer-backdrop.is-entering { animation: mode-fade .18s ease-out; }
 .mode-drawer { position: fixed; z-index: 41; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; width: min(440px, 100%); padding: 16px 18px 22px; border-left: 2px solid #d7ad2e; background: linear-gradient(180deg, rgba(18, 16, 13, .98), rgba(8, 10, 11, .98)); box-shadow: -18px 0 50px rgba(0,0,0,.55); overflow-y: auto; }
@@ -313,7 +316,7 @@ html, body { overflow: hidden; }
 .room-status { max-width: 92px; color: #8c9993; text-align: right; line-height: 1.2; }
 .profile-avatar-corner { position: relative; padding: 0; border: 0; background: transparent; }
 .setup-corner { position: fixed; top: 14px; right: 16px; z-index: 30; }
-.identity-corner { position: fixed; top: 14px; left: 16px; z-index: 30; display: flex; align-items: flex-start; gap: 14px; }
+.identity-corner { position: fixed; top: 14px; left: 16px; z-index: 30; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; max-width: calc(100vw - 76px); }
 .identity-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .identity-stack { gap: 6px; }
 .identity-stack .shop-badge { margin-top: 4px; }
@@ -417,16 +420,24 @@ html, body { overflow: hidden; }
 @keyframes codex-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 580px) {
-	.identity-corner { top: 8px; left: 8px; gap: 8px; }
-	.identity-item small { font-size: 8px; }
-	.setup-corner { top: 8px; right: 8px; }
-	.account-rune { width: 64px; height: 64px; font-size: 16px; }
-	.rank-badge { width: 34px; height: 34px; }
-	.rank-badge i { width: 16px; height: 16px; }
-	.setup-popover { width: min(230px, calc(100vw - 24px)); }
-	.rpg-room-panel .room-entry { grid-template-columns: 30px minmax(0, 1fr) auto; min-height: 52px; padding: 8px; }
-	.room-crest { width: 30px; height: 30px; font-size: 12px; }
-	.room-status { max-width: 80px; font-size: 8px; }
+    .identity-corner { top: 8px; left: 8px; gap: 8px; max-width: calc(100vw - 60px); }
+    .identity-item small { font-size: 8px; }
+    .setup-corner { top: 8px; right: 8px; }
+    .account-rune { width: 64px; height: 64px; font-size: 16px; }
+    .rank-badge { width: 34px; height: 34px; }
+    .rank-badge i { width: 16px; height: 16px; }
+    .setup-popover { width: min(230px, calc(100vw - 24px)); }
+    .rpg-room-panel .room-entry { grid-template-columns: 30px minmax(0, 1fr) auto; min-height: 52px; padding: 8px; }
+    .room-crest { width: 30px; height: 30px; font-size: 12px; }
+    .room-status { max-width: 80px; font-size: 8px; }
+}
+@media (max-width: 380px) {
+    .identity-corner { gap: 6px; }
+    .identity-stack { gap: 4px; }
+    .account-rune { width: 52px; height: 52px; font-size: 14px; }
+    .rank-badge, .setup-gear { width: 30px; height: 30px; }
+    .rank-badge i, .setup-gear svg { width: 14px; height: 14px; }
+    .identity-item small { font-size: 7px; }
 }
 
 /* Cenário preenche todo o fundo do combate e a imagem neutra fica sob os vídeos. */
