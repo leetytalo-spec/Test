@@ -1,9 +1,19 @@
+import http from 'node:http'
 import { randomInt, randomUUID, createHash } from 'node:crypto'
 import { DatabaseSync } from 'node:sqlite'
 import { WebSocketServer } from 'ws'
-import { recordMatchResult } from './infra/postgres.js'
 import path from 'node:path'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+
+let recordMatchResult = async () => false
+try {
+  const pgMod = await import('./infra/postgres.js')
+  if (typeof pgMod.recordMatchResult === 'function') {
+    recordMatchResult = pgMod.recordMatchResult
+  }
+} catch (e) {
+  // PostgreSQL opcional; servidor WebSocket continua funcionando normalmente
+}
 
 const port = Number(process.env.PORT || 8787)
 const rooms = new Map()
@@ -112,11 +122,20 @@ function resolvePlayerUserId(message, fallbackName) {
   return deriveUserId(message.username || message.name || fallbackName)
 }
 
-function getRoomPlayer(room, socket) {
+const getRoomPlayer = (room, socket) => {
   return room.players.find((player) => player.socket === socket) ?? null
 }
 
-const server = new WebSocketServer({ port })
+const httpServer = http.createServer((req, res) => {
+  if (req.url === '/health' || req.url === '/ws/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+    return res.end(JSON.stringify({ ok: true, status: 'online-server-ok', rooms: rooms.size, clients: clients.size }))
+  }
+  res.writeHead(404)
+  res.end('Not Found')
+})
+
+const server = new WebSocketServer({ server: httpServer })
 
 server.on('connection', (socket) => {
   clients.add(socket)
@@ -267,4 +286,6 @@ server.on('connection', (socket) => {
   })
 })
 
-console.log(`Leet Arena online server listening on ws://localhost:${port}`)
+httpServer.listen(port, '0.0.0.0', () => {
+  console.log(`Leet Arena online server listening on port ${port}`)
+})

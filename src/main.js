@@ -1328,6 +1328,7 @@ function isAbilityUnavailable(player, opponent, ability) {
     || (player.character?.id === 'ogro' && player.ogroGrabActive && ability.id !== 'squeeze' && ability.id !== 'release')
     || (player.character?.id === 'ogro' && !player.ogroGrabActive && (ability.id === 'squeeze' || ability.id === 'release'))
     || (ability.uses !== undefined && player.uses[ability.id] === 0)
+    || (ability.kind === 'mark' && opponent.markActive && opponent.markSource === 'cedric')
     || (ability.kind === 'impulse' && player.rage < 55)
     || (ability.kind === 'heal' && player.rage < 30)
     || (ability.kind === 'deny' && player.rage < 25)
@@ -1392,31 +1393,26 @@ function loadMediaAsset(relativeUrl) {
 
   const url = `${MEDIA_BASE_URL}${normalized}`
   const isImage = /\.(png|jpe?g|webp)$/i.test(normalized)
+  if (!isImage) return Promise.resolve(null)
 
   return new Promise((resolve) => {
+    let finished = false
     const finish = (asset) => {
-      mediaCache.set(normalized, asset)
-      preloadedMedia.push(asset)
+      if (finished) return
+      finished = true
+      if (asset) {
+        mediaCache.set(normalized, asset)
+        preloadedMedia.push(asset)
+      }
       resolve(asset)
     }
 
-    if (isImage) {
-      const image = new Image()
-      image.decoding = 'async'
-      image.onload = () => finish(image)
-      image.onerror = () => finish(null)
-      image.src = url
-      return
-    }
-
-    const video = document.createElement('video')
-    video.preload = 'auto'
-    video.muted = true
-    video.playsInline = true
-    video.oncanplaythrough = () => finish(video)
-    video.onerror = () => finish(null)
-    video.src = url
-    video.load()
+    const timer = setTimeout(() => finish(null), 800)
+    const image = new Image()
+    image.decoding = 'async'
+    image.onload = () => { clearTimeout(timer); finish(image) }
+    image.onerror = () => { clearTimeout(timer); finish(null) }
+    image.src = url
   })
 }
 
@@ -1425,32 +1421,39 @@ async function preloadBattleMedia() {
   preloadedMedia.length = 0
   const urls = []
   state.players.forEach((player) => {
-    const entries = videoManifest[player.character.id] ?? {}
+    const entries = videoManifest[player?.character?.id] ?? {}
     Object.values(entries).forEach((relativeUrl) => {
-      if (relativeUrl && !urls.includes(relativeUrl)) urls.push(relativeUrl)
+      if (relativeUrl && /\.(png|jpe?g|webp)$/i.test(relativeUrl) && !urls.includes(relativeUrl)) {
+        urls.push(relativeUrl)
+      }
     })
   })
   state.battleLoadTotal = urls.length
   state.battleLoadProgress = urls.length ? 0 : 100
-  state.battleLoadStatus = urls.length ? 'Carregando mídias da partida...' : 'Arena pronta.'
+  state.battleLoadStatus = urls.length ? 'Carregando personagens...' : 'Arena pronta.'
   render()
 
-  let loaded = 0
-  const markLoaded = () => {
-    loaded += 1
-    state.battleLoadProgress = (loaded / Math.max(1, urls.length)) * 100
-    state.battleLoadStatus = `Carregando mídia ${loaded} de ${urls.length}...`
-    render()
-  }
+  if (urls.length) {
+    let loaded = 0
+    const markLoaded = () => {
+      loaded += 1
+      state.battleLoadProgress = Math.min(100, Math.round((loaded / urls.length) * 100))
+      state.battleLoadStatus = `Carregando personagem ${loaded} de ${urls.length}...`
+      render()
+    }
 
-  await Promise.all(urls.map(async (relativeUrl) => {
-    const asset = await loadMediaAsset(relativeUrl)
-    if (asset) markLoaded()
-    else markLoaded()
-  }))
+    await Promise.race([
+      Promise.all(urls.map(async (relativeUrl) => {
+        await loadMediaAsset(relativeUrl)
+        markLoaded()
+      })),
+      new Promise((resolve) => setTimeout(resolve, 1500)),
+    ])
+  }
 
   state.battleLoadProgress = 100
   state.battleLoadStatus = 'Arena pronta.'
+  render()
 }
 
 function statusPanelMarkup() {
@@ -2575,14 +2578,13 @@ function resolveTurn() {
 }
 
 function formatActionText(player, selectedId, ability) {
-  const damageTotal = (player.turnDamage || []).reduce((sum, value) => sum + value, 0)
-  const healTotal = (player.turnHealing || []).reduce((sum, value) => sum + value, 0)
-  const hits = damageTotal > 0 ? `${damageTotal}💥` : ''
-  const heals = healTotal > 0 ? `+${healTotal}💚` : ''
+  const hits = (player.turnDamage || []).filter((v) => v > 0).map((value) => `${value}💥`).join(' ')
+  const heals = (player.turnHealing || []).filter((v) => v > 0).map((value) => `+${value}💚`).join(' ')
   const suffix = [hits, heals].filter(Boolean).join(' ')
   let label = `Usou ${ability.name}.`
   if (ability.id === 'basic' && ability.kind === 'damage') label = `Usou Ataque Básico${hits ? `: ${hits}` : '.'}`
   else if (selectedId === 'skip' || ability.kind === 'skip') label = 'Pulou o turno.'
+  else if (ability.kind === 'deny' || ability.id === 'denial') label = 'Ativou Negação.'
   else if (ability.kind === 'haku-dance') label = `Usou ${ability.name} e ${ability.predictionHit ? 'acertou' : 'falhou'}.`
   else if ((ability.kind === 'foresight' || ability.kind === 'sany-research' || ability.kind === 'analysis')) label = `Usou ${ability.name} e ${ability.predictionHit ? 'acertou' : 'falhou'}.`
   else if (suffix) label = `Usou ${ability.name}: ${suffix}`
@@ -2633,7 +2635,7 @@ function buildSelectedAbility(player, selectedId, opponent) {
     const predicted = opponent.character.abilities.find((item) => item.id === predictedId)
     ability = { ...ability, predictedId, predictedName: predicted?.name || predictedId }
   }
-  if (ability.kind === 'nox-pressure' && predictedId) {
+  if ((ability.kind === 'nox-pressure' || ability.kind === 'deny') && predictedId) {
     const target = opponent.character.abilities.find((item) => item.id === predictedId)
     ability = { ...ability, targetId: predictedId, targetName: target?.name || predictedId }
   }
@@ -2649,6 +2651,7 @@ function triggerPredatory(player, opponent, ability, opponentAbility, events) {
   player.turnActionLabel = 'Usou Ataque Predatório'
   if (selectedPredatory) consume(player, ability)
   player.turnDamage = [...(player.turnDamage || []), 160]
+  player.turnHealing = [...(player.turnHealing || []), 180]
   dealDamage(opponent, 160, events, `${player.name} ativou o Ataque predatório e causou 160 de dano.`)
   const recoveredHp = healPlayer(player, 180, events)
   events.push(recoveredHp > 0 ? `${player.name} recuperou ${recoveredHp} HP.` : `${player.name} tentou recuperar 180 HP, mas já estava com o HP cheio.`)
@@ -2873,6 +2876,14 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     events.push(`${player.name} teve o ataque básico anulado por Sou o melhor! e causou 0 de dano.`)
     return
   }
+  if (player.character?.id === 'cedric' && opponent.markActive && opponent.markSource === 'cedric') {
+    if (ability.id !== 'basic' && ability.id !== 'mark') {
+      opponent.markActive = false
+      opponent.markBasicHits = 0
+      opponent.markSource = null
+      events.push(`${player.name} mudou de ação e perdeu a marca ativa em ${opponent.name}.`)
+    }
+  }
   if (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id === 'basic') return
   if (ability.kind === 'damage') {
     const hakuHits = player.character?.id === 'haku' && ability.id === 'basic' ? takeHakuHits(player, player.hakuLastDanceActive ? 2 : 1) : []
@@ -2917,7 +2928,25 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     const luckBonus = player.character?.id === 'kiro' && ability.id === 'basic' && Math.random() < .3 ? 100 : 0
     const totalDamage = damage + markBonus
     const firstDamage = totalDamage + luckBonus
-    player.turnDamage = [...(player.turnDamage || []), firstDamage]
+
+    const displayedDamageParts = []
+    if (hakuHits.length) {
+      displayedDamageParts.push(...hakuHits)
+    } else {
+      let mainPart = baseDamage
+      if (player.character?.id === 'sany' && ability.id === 'basic' && opponent.hp > player.hp) mainPart += 80
+      if (player.character?.id === 'damon' && (player.damonBasicBonus || 0) > 0) mainPart += player.damonBasicBonus
+      if (player.character?.id === 'kiro' && ability.id === 'basic') mainPart += player.kiroStrengthBonus
+      if (player.character?.id === 'sany' && player.sanyAmplificationUntilTurn >= state.turn) mainPart = Math.floor(mainPart * 1.25)
+      displayedDamageParts.push(mainPart)
+      for (const bonus of bonusParts) {
+        if (bonus > 0) displayedDamageParts.push(bonus)
+      }
+    }
+    if (markBonus > 0) displayedDamageParts.push(markBonus)
+    if (luckBonus > 0) displayedDamageParts.push(luckBonus)
+
+    player.turnDamage = [...(player.turnDamage || []), ...displayedDamageParts]
     if (ability.uses !== undefined) consume(player, ability)
     const hit = dealDamage(opponent, firstDamage, events, `${player.name} causou ${firstDamage} de dano.`)
     if (hit && opponent.character?.id === 'brick') {
@@ -2930,7 +2959,7 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     }
     if (player.character?.id === 'kiro' && ability.id === 'basic' && player.kiroDoubleArmed) {
       player.kiroDoubleArmed = false
-      player.turnDamage.push(damage)
+      player.turnDamage.push(...displayedDamageParts)
       dealDamage(opponent, damage, events, `${player.name} repetiu o ataque com Ataque duplo e causou ${damage} de dano.`)
     }
     if (player.character?.id === 'kiro' && ability.id === 'basic') player.kiroStrengthBonus = 0
@@ -3006,7 +3035,21 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
   else if (ability.kind === 'retaliation') { if (player.brickDodges >= 2 && player.brickPunchesReceived >= 6 && player.brickKicksReceived >= 2) { dealDamage(opponent, 700, events, `${player.name} ativou Retaliação e causou 700 de dano.`); player.uses = Object.fromEntries(player.character.abilities.filter((item) => item.uses !== undefined).map((item) => [item.id, item.uses])); player.brickDodges = 0; player.brickPunchesReceived = 0; player.brickKicksReceived = 0 } }
   else if (ability.kind === 'dodge') { player.nextTurnDodge = true; consume(player, ability); events.push(`${player.name} preparou uma Esquiva.`) }
   else if (ability.kind === 'bindings') { opponent.forcedBasicTurns = 2; opponent.forcedBasicStartsTurn = state.turn + 1; opponent.basicDamageBonus = 100; opponent.basicDamageBonusExpiresTurn = state.turn + 3; consume(player, ability); events.push(`${player.name} amarrou ${opponent.name}: ele será forçado a usar 2 ataques básicos nos próximos 2 turnos e receberá +100 em cada um.`) }
-  else if (ability.kind === 'deny') { player.rage -= 25; const candidate = opponent.character.abilities.find((item) => item.id === state.denyTargetAbilityId && item.id !== 'basic' && item.kind !== 'rage') || opponent.character.abilities.find((item) => item.id !== 'basic' && item.kind !== 'rage'); if (candidate) { opponent.blockedAbilityId = candidate.id; opponent.blockedAbilitySource = 'denial'; opponent.blockedAbilityUntilTurn = state.turn + 3; events.push(`${player.name} negou ${candidate.name} de ${opponent.name} pelos próximos 2 turnos.`) } else { events.push(`${player.name} tentou negar, mas ${opponent.name} não tinha habilidade ativa para bloquear.`) } state.denyTargetAbilityId = '' }
+  else if (ability.kind === 'deny') {
+    player.rage -= 25
+    const targetId = ability.targetId || state.denyTargetAbilityId
+    const candidate = opponent.character.abilities.find((item) => item.id === targetId && item.id !== 'basic' && item.kind !== 'rage' && !isPassiveAbility(item)) || opponent.character.abilities.find((item) => item.id !== 'basic' && item.kind !== 'rage' && !isPassiveAbility(item))
+    if (candidate) {
+      opponent.blockedAbilityId = candidate.id
+      opponent.blockedAbilitySource = 'denial'
+      opponent.blockedAbilityUntilTurn = state.turn + 3
+      events.push(`${player.name} negou ${candidate.name} de ${opponent.name} por 2 turnos.`)
+    } else {
+      events.push(`${player.name} usou Negação, mas ${opponent.name} não tinha habilidade ativa para bloquear.`)
+    }
+    player.turnActionLabel = 'Ativou Negação.'
+    state.denyTargetAbilityId = ''
+  }
   else if (ability.kind === 'ogro-grab') { opponent.ogroGrabbedTurns = 5; player.ogroGrabActive = true; assignOgroForcedAbility(opponent, player, 'grab'); consume(player, ability); events.push(`${player.name} agarrou ${opponent.name} pelo pescoço.`) }
   else if (ability.kind === 'ogro-squeeze') { if (player.ogroGrabActive) dealDamage(opponent, 50, events, `${player.name} apertou ${opponent.name} e causou 50 de dano.`) }
   else if (ability.kind === 'ogro-release') { player.ogroGrabActive = false; opponent.ogroGrabbedTurns = 0; opponent.ogroForcedAbilityId = null; opponent.ogroForcedAbilityName = ''; opponent.forcedRandomReason = ''; events.push(`${player.name} soltou ${opponent.name}.`) }
