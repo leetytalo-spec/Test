@@ -1,0 +1,48 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H 2.25.214.134 >> ~/.ssh/known_hosts 2>/dev/null || true
+      
+      - name: Deploy to VPS
+        run: |
+          ssh -i ~/.ssh/deploy_key root@2.25.214.134 << 'EOF'
+          cd /root/leet-arena || exit 1
+          git pull origin main || exit 1
+          npm run build || exit 1
+          
+          # Get current version number
+          CURRENT_VERSION=$(ls -1 update-server/releases/ | grep "^web-" | sed 's/web-//;s/.zip//' | sort -n | tail -1)
+          NEXT_VERSION=$((CURRENT_VERSION + 1))
+          
+          node update-server/publish-web.js "$NEXT_VERSION" "Deploy automático via GitHub Actions" || exit 1
+          
+          cp -r dist/* /var/www/leetarena-web/ || exit 1
+          cp update-server/releases/web-${NEXT_VERSION}.zip update-server/releases/web.json /var/www/leetarena-updates/ || exit 1
+          mkdir -p /var/www/leetarena-updates/web || exit 1
+          cp update-server/releases/web-${NEXT_VERSION}.zip /var/www/leetarena-updates/web/web-${NEXT_VERSION}.zip || exit 1
+          
+          pm2 restart all || exit 1
+          echo "✅ Deploy v${NEXT_VERSION} concluído com sucesso!"
+          EOF
+      
+      - name: Cleanup SSH
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
