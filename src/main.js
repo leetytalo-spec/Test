@@ -1,6 +1,6 @@
 import './style.css'
 import { Capacitor } from '@capacitor/core'
-import { authRequest, checkForUpdate, checkWebUpdate, installWebUpdate, installUpdate, getInstalledVersion, loadMediaManifest, onDownloadProgress, exitApp } from './updater.js'
+import { checkForUpdate, checkWebUpdate, installWebUpdate, installUpdate, getInstalledVersion, onDownloadProgress, exitApp } from './updater.js'
 import { Activity, Ban, Bell, BookOpen, ChevronDown, Clock3, Flame, Heart, LayoutDashboard, Link, LogOut, Mail, MessageCircle, Plus, Radio, ScrollText, Search, Send, Settings, ShieldCheck, Skull, Sparkles, Store, Swords, Target, Trophy, UserRound, Users, Wifi, Zap, createIcons } from 'lucide'
 
 // No app instalado (Android) não existe "localhost" do PC — precisa apontar para o servidor real.
@@ -8,7 +8,6 @@ const APP_DOMAIN = 'https://leetarena.tech'
 const MEDIA_BASE_URL = Capacitor.isNativePlatform()
   ? `${APP_DOMAIN}/media`
   : (import.meta.env.VITE_MEDIA_URL || `${window.location.origin}/media`)
-const mediaUrl = (path) => /^(?:[a-z]+:|data:|blob:)/i.test(String(path || '')) ? path : `${MEDIA_BASE_URL}${path || ''}`
 const storedAuthToken = localStorage.getItem('leet-auth-token') || ''
 let storedUser = null
 try { storedUser = JSON.parse(localStorage.getItem('leet-auth-user') || 'null') } catch { storedUser = null }
@@ -191,7 +190,7 @@ function loadingFighterCard(player, index) {
   const rankUser = state.online ? (state.onlinePlayerNames?.[index] || '') : (index === 0 ? (state.currentUser?.username || 'Jogador') : 'Jogador 2')
   const fighterRank = getPlayerRank(rankUser)
   return `<div class="load-fighter" style="--accent:${character.accent}">
-    <div class="load-fighter-art">${icon ? `<img src="${mediaUrl(icon)}" alt="${character.name}">` : `<span>${character.name.slice(0, 2).toUpperCase()}</span>`}</div>
+    <div class="load-fighter-art">${icon ? `<img src="${MEDIA_BASE_URL}${icon}" alt="${character.name}">` : `<span>${character.name.slice(0, 2).toUpperCase()}</span>`}</div>
     <strong>${escapeHtml(character.name)}</strong>
     <small>${escapeHtml(label)}</small>
     <span class="load-fighter-rank-badge" style="--rank-color:${fighterRank.color}; color:${fighterRank.color}">★ ${escapeHtml(fighterRank.label.toUpperCase())}</span>
@@ -247,7 +246,7 @@ function shiftLoadingTip(step) {
 }
 
 function renderCharacterSelect() {
-  return `<section class="character-select-screen"><div class="character-select-panel"><p class="eyebrow">A SALA ESTÁ COMPLETA</p><h1>ESCOLHA SEU PERSONAGEM</h1><p class="character-select-copy">A escolha é secreta. O oponente verá apenas quando a partida começar.</p><div class="character-select-timer">${Math.max(0, state.characterTimeLeft)}s</div><div class="character-choice-grid">${Object.values(characters).map((character) => { const icon = videoManifest[character.id]?.icon; return `<button class="character-choice ${state.characterChoice === character.id ? 'selected' : ''}" data-character-choice="${character.id}">${icon ? `<img class="character-choice-icon" src="${mediaUrl(icon)}" alt="${character.name}">` : '<span class="character-choice-placeholder">' + character.name.slice(0, 2).toUpperCase() + '</span>'}<strong>${character.name}</strong><small>${character.title}</small></button>` }).join('')}</div><p class="character-select-status">${state.characterChoice ? (state.characterOpponentChosen ? 'Oponente escolheu. Aguardando resolução...' : 'Escolha registrada. Aguardando o oponente...') : 'Escolha um personagem para continuar.'}</p></div></section>`
+  return `<section class="character-select-screen"><div class="character-select-panel"><p class="eyebrow">A SALA ESTÁ COMPLETA</p><h1>ESCOLHA SEU PERSONAGEM</h1><p class="character-select-copy">A escolha é secreta. O oponente verá apenas quando a partida começar.</p><div class="character-select-timer">${Math.max(0, state.characterTimeLeft)}s</div><div class="character-choice-grid">${Object.values(characters).map((character) => { const icon = videoManifest[character.id]?.icon; return `<button class="character-choice ${state.characterChoice === character.id ? 'selected' : ''}" data-character-choice="${character.id}">${icon ? `<img class="character-choice-icon" src="${MEDIA_BASE_URL}${icon}" alt="${character.name}">` : '<span class="character-choice-placeholder">' + character.name.slice(0, 2).toUpperCase() + '</span>'}<strong>${character.name}</strong><small>${character.title}</small></button>` }).join('')}</div><p class="character-select-status">${state.characterChoice ? (state.characterOpponentChosen ? 'Oponente escolheu. Aguardando resolução...' : 'Escolha registrada. Aguardando o oponente...') : 'Escolha um personagem para continuar.'}</p></div></section>`
 }
 
 const adminTabs = [{ id: 'upload', label: 'UPLOAD DE VÍDEOS' }]
@@ -464,7 +463,7 @@ function renderCodexModal() {
           const open = state.codexCharacter === character.id
           return `<div class="codex-entry ${open ? 'open' : ''}">
             <button class="codex-tab" data-codex-character="${character.id}">
-              <span class="codex-avatar">${icon ? `<img src="${mediaUrl(icon)}" alt="${character.name}">` : character.name.slice(0, 2).toUpperCase()}</span>
+              <span class="codex-avatar">${icon ? `<img src="${MEDIA_BASE_URL}${icon}" alt="${character.name}">` : character.name.slice(0, 2).toUpperCase()}</span>
               <span class="codex-tab-copy"><strong>${character.name}</strong><small>${character.title} · ${character.hp} HP</small></span>
               <span class="codex-arrow">${open ? '−' : '+'}</span>
             </button>
@@ -517,7 +516,7 @@ function renderProfileModal() {
       <div class="profile-field profile-avatar-field">
         <span>ESCOLHA SEU AVATAR</span>
         <div class="profile-avatar-options">
-          ${availableAvatars.length ? availableAvatars.map(({ character, path }) => `<button type="button" class="profile-avatar-option ${avatar === mediaUrl(path) ? 'selected' : ''}" data-profile-avatar="${path}" title="Usar ícone de ${character.name}"><img src="${mediaUrl(path)}" alt="${character.name}"></button>`).join('') : '<small class="profile-avatar-empty">Nenhum ícone foi publicado ainda.</small>'}
+          ${availableAvatars.length ? availableAvatars.map(({ character, path }) => `<button type="button" class="profile-avatar-option ${avatar === `${MEDIA_BASE_URL}${path}` ? 'selected' : ''}" data-profile-avatar="${path}" title="Usar ícone de ${character.name}"><img src="${MEDIA_BASE_URL}${path}" alt="${character.name}"></button>`).join('') : '<small class="profile-avatar-empty">Nenhum ícone foi publicado ainda.</small>'}
         </div>
       </div>
       <div class="profile-account-line">
@@ -1259,7 +1258,7 @@ function loadMediaAsset(relativeUrl) {
   if (!normalized) return Promise.resolve(null)
   if (mediaCache.has(normalized)) return Promise.resolve(mediaCache.get(normalized))
 
-  const url = mediaUrl(normalized)
+  const url = `${MEDIA_BASE_URL}${normalized}`
   const isImage = /\.(png|jpe?g|webp)$/i.test(normalized)
 
   return new Promise((resolve) => {
@@ -1460,7 +1459,7 @@ function updateIdleFrames() {
     const image = slot?.querySelector('.idle-frame')
     if (!image) return
     const idleUrl = getVideoUrl(player.character.id, 'idle')
-    if (idleUrl) image.src = mediaUrl(idleUrl)
+    if (idleUrl) image.src = `${MEDIA_BASE_URL}${idleUrl}`
     else image.removeAttribute('src')
     image.hidden = !idleUrl
   })
@@ -1491,7 +1490,7 @@ function playSlot(slotEl, url) {
     return null
   }
   video.hidden = false
-  const finalUrl = mediaUrl(url)
+  const finalUrl = `${MEDIA_BASE_URL}${url}`
   if (video.src !== finalUrl && !video.src.endsWith(encodeURI(url))) {
     video.src = finalUrl
     video.load()
@@ -1540,7 +1539,8 @@ function playNextVideoItem() {
 
 async function loadVideoManifest() {
   try {
-    videoManifest = await loadMediaManifest()
+    const response = await fetch(`${MEDIA_BASE_URL}/manifest.json?t=${Date.now()}`, { cache: 'no-store' })
+    videoManifest = await response.json()
   } catch { videoManifest = {} }
   updateIdleFrames()
 }
@@ -1748,7 +1748,7 @@ function bindEvents() {
   })
   document.querySelectorAll('[data-profile-avatar]').forEach((button) => button.addEventListener('click', () => {
     const username = state.currentUser?.username || 'Jogador'
-    setPlayerAvatar(mediaUrl(button.dataset.profileAvatar), username)
+    setPlayerAvatar(`${MEDIA_BASE_URL}${button.dataset.profileAvatar}`, username)
     render()
   }))
   document.querySelector('[data-action="toggle-setup"]')?.addEventListener('click', () => { state.setupOpen = !state.setupOpen; render() })
@@ -1942,18 +1942,13 @@ async function openAdminAccess() {
     return
   }
   try {
-    const response = await authRequest('/admin/session', { token: state.authToken })
-    if (response.status === 401 || response.status === 403) {
-      clearStoredSession()
-      state.authError = 'Sua sessão expirou. Entre novamente.'
-      state.screen = 'auth'
-      render()
-      return
-    }
-    if (!response.ok) throw new Error(`Servidor respondeu ${response.status}.`)
+    const response = await fetch(`${MEDIA_BASE_URL}/admin/session`, { headers: { Authorization: `Bearer ${state.authToken}` } })
+    if (!response.ok) throw new Error('expired')
     state.screen = state.screen === 'dashboard' ? 'admin' : 'dashboard'
-  } catch (error) {
-    state.dashboardNotice = error.message || 'Não foi possível conectar ao painel.'
+  } catch {
+    clearStoredSession()
+    state.authError = 'Sua sessão expirou. Entre novamente.'
+    state.screen = 'auth'
   }
   render()
 }
@@ -1966,8 +1961,9 @@ async function authenticateAccount(event) {
   state.authError = ''
   render()
   try {
-    const response = await authRequest(`/auth/${state.authMode}`, {
+    const response = await fetch(`${MEDIA_BASE_URL}/auth/${state.authMode}`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     })
     const result = await response.json()
@@ -1998,7 +1994,7 @@ function clearStoredSession() {
 }
 
 async function logoutAccount(message = '') {
-  if (state.authToken) authRequest('/auth/logout', { method: 'POST', token: state.authToken }).catch(() => {})
+  if (state.authToken) fetch(`${MEDIA_BASE_URL}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${state.authToken}` } }).catch(() => {})
   clearOnlineSession()
   clearStoredSession()
   state.authError = typeof message === 'string' ? message : ''
@@ -2009,7 +2005,7 @@ async function logoutAccount(message = '') {
 async function restoreSession() {
   if (!state.authToken) return
   try {
-    const response = await authRequest('/auth/session', { token: state.authToken })
+    const response = await fetch(`${MEDIA_BASE_URL}/auth/session`, { headers: { Authorization: `Bearer ${state.authToken}` } })
     if (!response.ok) throw new Error('expired')
     const { user } = await response.json()
     persistSession(state.authToken, user)
@@ -2274,13 +2270,22 @@ function currentPlayerName() {
 }
 
 // O chat geral reaproveita a conexão da lista de salas e reconecta se ela tiver caído.
-function ensureChatSocket() {
-  const socket = state.roomFeedSocket
+function ensureChatSocket() {  const socket = state.roomFeedSocket
   if (socket && (socket.readyState === globalThis.WebSocket.OPEN || socket.readyState === globalThis.WebSocket.CONNECTING)) return
   state.roomFeedSocket = null
   state.roomFeedConnecting = false
   state.roomFeedConnected = false
   connectOnline('list')
+}
+
+// Redes móveis costumam bloquear portas altas, então tentamos a porta 443 antes do IP direto.
+const socketEndpoints = ['wss://leetarena.tech/ws', 'ws://2.25.214.134:8787']
+let socketEndpointIndex = 0
+let socketEndpointWorking = false
+
+function rotateSocketEndpoint() {
+  if (socketEndpointWorking) return
+  socketEndpointIndex = (socketEndpointIndex + 1) % socketEndpoints.length
 }
 
 function onlineSocketUrl() {
@@ -2289,7 +2294,7 @@ function onlineSocketUrl() {
   const configured = envUrl || runtimeUrl
   if (configured) return configured
 
-  if (Capacitor.isNativePlatform()) return 'wss://leetarena.tech/ws'
+  if (Capacitor.isNativePlatform()) return socketEndpoints[socketEndpointIndex % socketEndpoints.length]
 
   if (typeof window !== 'undefined' && window.location?.host) {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -2299,7 +2304,7 @@ function onlineSocketUrl() {
   return 'ws://localhost:8787'
 }
 
-function connectOnline(mode, selectedCode = '', retryCount = 0) {
+function connectOnline(mode, selectedCode = '') {
   if (mode === 'list') {
     if (state.roomFeedSocket && state.roomFeedSocket.readyState === globalThis.WebSocket.OPEN) return
     if (state.roomFeedSocket && state.roomFeedSocket.readyState === globalThis.WebSocket.CONNECTING) return
@@ -2334,9 +2339,8 @@ function connectOnline(mode, selectedCode = '', retryCount = 0) {
   }
   if (mode === 'list') state.roomFeedSocket = socket
   else state.socket = socket
-  let opened = false
   socket.addEventListener('open', () => {
-    opened = true
+    socketEndpointWorking = true
     if (mode === 'list') {
       state.roomFeedConnected = true
       socket.send(JSON.stringify({ type: 'list-rooms' }))
@@ -2347,16 +2351,9 @@ function connectOnline(mode, selectedCode = '', retryCount = 0) {
     socket.send(JSON.stringify(mode === 'create' ? { type: 'create', token: state.authToken, character, name, avatar: getPlayerAvatar() } : { type: 'join', token: state.authToken, code, character, name, avatar: getPlayerAvatar() }))
   })
   socket.addEventListener('message', (event) => handleOnlineMessage(JSON.parse(event.data)))
-  socket.addEventListener('error', () => { if (mode === 'list') { state.roomFeedConnected = false; state.roomFeedConnecting = false } state.onlineError = ''; render() })
-  socket.addEventListener('close', () => {
-    if (mode === 'list') { state.roomFeedSocket = null; state.roomFeedConnected = false; state.roomFeedConnecting = false; if (state.chatOpen) render() }
-    if (!socket.intentionalClose && !opened && retryCount < 2) {
-      setTimeout(() => connectOnline(mode, selectedCode, retryCount + 1), 1000)
-      return
-    }
-    if (!socket.intentionalClose && mode !== 'list' && (!state.roomCode || state.screen === 'home')) { state.onlineError = ''; render() }
-  })
-  setTimeout(() => { if (socket.readyState === globalThis.WebSocket.CONNECTING) { socket.close(); if (mode === 'list') state.roomFeedConnecting = false; state.onlineError = ''; render() } }, 8000)
+  socket.addEventListener('error', () => { rotateSocketEndpoint(); if (mode === 'list') { state.roomFeedConnected = false; state.roomFeedConnecting = false } state.onlineError = ''; render() })
+  socket.addEventListener('close', () => { if (mode === 'list') { state.roomFeedSocket = null; state.roomFeedConnected = false; state.roomFeedConnecting = false; if (state.chatOpen) render() } if (!socket.intentionalClose && mode !== 'list' && (!state.roomCode || state.screen === 'home')) { state.onlineError = ''; render() } })
+  setTimeout(() => { if (socket.readyState === globalThis.WebSocket.CONNECTING) { rotateSocketEndpoint(); socket.close(); if (mode === 'list') state.roomFeedConnecting = false; state.onlineError = ''; render() } }, 8000)
 }
 
 async function handleOnlineMessage(message) {

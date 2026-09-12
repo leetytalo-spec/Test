@@ -85,10 +85,6 @@ function roomState(room) {
   return room.players.map((player) => ({ index: player.index, character: player.character, name: player.name, ready: Boolean(player.socket) }))
 }
 
-function roomDisplayName(character) {
-  return character === 'voss' ? 'Maria' : 'João'
-}
-
 function publicRooms() {
   return [...rooms.values()]
     .filter((room) => room.players.length < 2)
@@ -98,7 +94,7 @@ function publicRooms() {
       players: room.players.filter((player) => player.socket).length,
       members: room.players.filter((player) => player.socket).map((player) => ({
         character: player.character,
-        name: roomDisplayName(player.character),
+        name: player.name,
       })),
     }))
 }
