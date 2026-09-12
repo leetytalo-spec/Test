@@ -25,6 +25,8 @@ import java.security.MessageDigest;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
+import org.json.JSONObject;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -33,6 +35,82 @@ public class ApkUpdaterPlugin extends Plugin {
 
     private static final String WEB_PREFS = "leet-web-update";
     private static final String AUTH_BASE_URL = "https://leetarena.tech/media";
+
+    @PluginMethod
+    public void mediaManifest(PluginCall call) {
+        call.setKeepAlive(true);
+        new Thread(() -> {
+            try {
+                JSObject source = new JSObject(readUrl(AUTH_BASE_URL + "/manifest.json"));
+                JSObject localManifest = new JSObject();
+                File cacheRoot = new File(getContext().getFilesDir(), "game-media");
+                if (!cacheRoot.exists() && !cacheRoot.mkdirs()) {
+                    throw new IllegalStateException("Não foi possível preparar o cache de imagens.");
+                }
+
+                Iterator<String> characters = source.keys();
+                while (characters.hasNext()) {
+                    String character = characters.next();
+                    JSONObject entries = source.optJSONObject(character);
+                    if (entries == null) continue;
+                    JSObject localEntries = new JSObject();
+                    Iterator<String> abilities = entries.keys();
+                    while (abilities.hasNext()) {
+                        String ability = abilities.next();
+                        String relativePath = entries.optString(ability, "");
+                        if (!relativePath.matches("^/[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+$")) continue;
+                        File target = new File(cacheRoot, character + "-" + new File(relativePath).getName());
+                        downloadFile(AUTH_BASE_URL + relativePath, target);
+                        localEntries.put(ability, Uri.fromFile(target).toString());
+                    }
+                    localManifest.put(character, localEntries);
+                }
+                call.resolve(localManifest);
+            } catch (Exception error) {
+                call.reject("Falha ao carregar as imagens do jogo: " + error.getMessage(), error);
+            }
+        }).start();
+    }
+
+    private String readUrl(String url) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        try {
+            connection.setConnectTimeout(20000);
+            connection.setReadTimeout(30000);
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setUseCaches(false);
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) throw new IllegalStateException("Servidor respondeu " + status + ".");
+            return readText(connection.getInputStream());
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private void downloadFile(String url, File target) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        File temporary = new File(target.getAbsolutePath() + ".part");
+        try {
+            connection.setConnectTimeout(20000);
+            connection.setReadTimeout(60000);
+            connection.setUseCaches(false);
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) throw new IllegalStateException("Servidor respondeu " + status + ".");
+            long contentLength = connection.getContentLengthLong();
+            if (target.exists() && target.length() > 0 && contentLength > 0 && target.length() == contentLength) return;
+            try (InputStream input = connection.getInputStream(); FileOutputStream output = new FileOutputStream(temporary)) {
+                byte[] buffer = new byte[16384];
+                int count;
+                while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
+            }
+            if (temporary.length() == 0 || (!temporary.renameTo(target) && !target.exists())) {
+                throw new IllegalStateException("Imagem recebida incompleta.");
+            }
+        } finally {
+            connection.disconnect();
+            if (temporary.exists()) temporary.delete();
+        }
+    }
 
     @PluginMethod
     public void authRequest(PluginCall call) {

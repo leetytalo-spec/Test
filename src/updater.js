@@ -37,6 +37,20 @@ export async function authRequest(path, options = {}) {
   })
 }
 
+export async function loadMediaManifest() {
+  const plugin = getPlugin()
+  if (plugin) {
+    const manifest = await plugin.mediaManifest()
+    return Object.fromEntries(Object.entries(manifest).map(([character, entries]) => [
+      character,
+      Object.fromEntries(Object.entries(entries).map(([ability, path]) => [ability, Capacitor.convertFileSrc(path)])),
+    ]))
+  }
+  const response = await fetch('https://leetarena.tech/media/manifest.json', { cache: 'no-store' })
+  if (!response.ok) throw new Error(`Servidor respondeu ${response.status}.`)
+  return response.json()
+}
+
 export async function getInstalledVersion() {
   const plugin = getPlugin()
   if (!plugin) return null

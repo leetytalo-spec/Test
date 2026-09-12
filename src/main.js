@@ -1,13 +1,14 @@
 import './style.css'
 import { Capacitor } from '@capacitor/core'
-import { authRequest, checkForUpdate, checkWebUpdate, installWebUpdate, installUpdate, getInstalledVersion, onDownloadProgress, exitApp } from './updater.js'
-import { Activity, Ban, Bell, BookOpen, ChevronDown, Clock3, Flame, Heart, Image, LayoutDashboard, Link, LogOut, Mail, MessageCircle, Plus, Radio, ScrollText, Search, Send, Settings, ShieldCheck, Skull, Sparkles, Store, Swords, Target, Trash2, Trophy, UserRound, Users, Wifi, Zap, createIcons } from 'lucide'
+import { authRequest, checkForUpdate, checkWebUpdate, installWebUpdate, installUpdate, getInstalledVersion, loadMediaManifest, onDownloadProgress, exitApp } from './updater.js'
+import { Activity, Ban, Bell, BookOpen, ChevronDown, Clock3, Flame, Heart, LayoutDashboard, Link, LogOut, Mail, MessageCircle, Plus, Radio, ScrollText, Search, Send, Settings, ShieldCheck, Skull, Sparkles, Store, Swords, Target, Trophy, UserRound, Users, Wifi, Zap, createIcons } from 'lucide'
 
 // No app instalado (Android) não existe "localhost" do PC — precisa apontar para o servidor real.
 const APP_DOMAIN = 'https://leetarena.tech'
 const MEDIA_BASE_URL = Capacitor.isNativePlatform()
   ? `${APP_DOMAIN}/media`
   : (import.meta.env.VITE_MEDIA_URL || `${window.location.origin}/media`)
+const mediaUrl = (path) => /^(?:[a-z]+:|data:|blob:)/i.test(String(path || '')) ? path : `${MEDIA_BASE_URL}${path || ''}`
 const storedAuthToken = localStorage.getItem('leet-auth-token') || ''
 let storedUser = null
 try { storedUser = JSON.parse(localStorage.getItem('leet-auth-user') || 'null') } catch { storedUser = null }
@@ -32,8 +33,6 @@ const characters = {
       { id: 'impulse', name: 'Impulso', detail: 'Aumento o dano do ataque básico em +250 apenas no próximo turno. Custa 55 de fúria. Ilimitado.', kind: 'impulse' },
       { id: 'heal', name: 'Cura', detail: 'Recupera 250 de HP, custa 30 de fúria. Ilimitado.', kind: 'heal' },
       { id: 'denial', name: 'Negação', detail: 'Bloqueia o oponente de usar 1 habilidade ativa por 2 turnos. Custo: 25 de fúria.', kind: 'deny' },
-      { id: 'rancor', name: 'Rancor', detail: 'Passiva. Se sofrer um dano único maior que 250, ganha 20 de fúria. Ilimitado.', kind: 'rancor' },
-      { id: 'rumination', name: 'Ruminação', detail: 'Passiva. Se sofrer 3 ataques consecutivos do mesmo tipo, ganha 15 de fúria. Ilimitado.', kind: 'rumination' },
     ],
   },
   damon: {
@@ -140,17 +139,16 @@ const state = {
   screen: storedAuthToken ? (storedUser?.role === 'admin' ? 'dashboard' : 'home') : 'auth', players: [], turn: 1, phase: 'p1', selections: {}, log: [], result: '', animation: null,
   online: false, socket: null, roomFeedSocket: null, roomCode: '', createdRoomCode: '', playerIndex: 0, onlineWaiting: false, onlineError: '', publicRooms: [], onlinePlayerNames: [],
   homeMode: '', musicEnabled: false, roomFeedConnecting: false, roomFeedConnected: false, showSurrenderModal: false, actionNotice: '', matchResultRecorded: false,
-  lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }],
+  lastTurnActions: [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }], hpDeltas: [null, null],
   updateAvailable: false, updateManifest: null, updateStatus: '', updateError: '', updateInstalling: false, updateProgress: 0, updateDownloaded: 0, updateTotal: 0, appVersionName: '',
-  adminTab: 'upload',
+  adminTab: 'upload', adminUpload: { character: 'cedric', ability: 'basic', file: null, status: '' },
   adminIdle: { character: 'cedric', file: null, status: '' }, adminIcon: { character: 'cedric', file: null, status: '' },
   authToken: storedAuthToken, currentUser: storedUser, authMode: 'login', authError: '', authLoading: false,
   battleLoading: false, battleLoadProgress: 0, battleLoadTotal: 0, battleLoadStatus: '', characterChoice: null, characterOpponentChosen: false, characterTimeLeft: 45, characterTimerId: null,
   dashboardTab: 'overview', dashboardRange: 'daily', dashboardFilter: 'all', dashboardQuery: '', dashboardNotice: '', dashboardSearchOpen: false,
-  setupOpen: false, profileOpen: false, profileDraft: '', avatarPickerOpen: false, leaderboardOpen: false, rankingInfoOpen: false, eventsOpen: false, comingSoonOpen: false, comingSoonLabel: '',
-  adminEvent: { title: '', description: '', image: '', file: null, status: '' },
-  denyPickerOpen: false, denyTargetAbilityId: '', foresightPickerOpen: false, pressurePickerOpen: false, modeDrawerEntering: false, codexOpen: false, codexCharacter: '', mailboxOpen: false, adminMail: { subject: '', body: '', status: '' }, chatOpen: false, chatTab: 'general', generalChatMessages: [], privateChatMessages: [], chatDraft: '',
-  turnTimeLeft: 40, turnTimerId: null, loadingTipIndex: 0, loadingTipTimerId: null,
+  setupOpen: false, profileOpen: false, profileDraft: '', leaderboardOpen: false, comingSoonOpen: false, comingSoonLabel: '',
+  denyPickerOpen: false, denyTargetAbilityId: '', foresightPickerOpen: false, pressurePickerOpen: false, modeDrawerEntering: false, codexOpen: false, codexCharacter: 'cedric', mailboxOpen: false, adminMail: { subject: '', body: '', status: '' }, chatOpen: false, chatTab: 'general', generalChatMessages: [], privateChatMessages: [], chatDraft: '',
+  videoQueue: [], videoPlaying: false, turnTimeLeft: 40, turnTimerId: null, loadingTipIndex: 0, loadingTipTimerId: null,
 }
 
 const app = document.querySelector('#app')
@@ -162,7 +160,7 @@ function render() {
   if (state.screen === 'loading') startLoadingTipTimer()
   else stopLoadingTipTimer()
   app.innerHTML = state.screen === 'auth' ? renderAccountAccess() : state.screen === 'home' ? renderGameHome() : state.screen === 'dashboard' ? renderDashboard() : state.screen === 'loading' ? renderBattleLoading() : state.screen === 'character-select' ? renderCharacterSelect() : state.screen === 'lobby' ? renderLobby() : state.screen === 'admin' ? renderAdmin() : renderBattle()
-  createIcons({ icons: { Activity, Ban, Bell, BookOpen, ChevronDown, Clock3, Flame, Heart, Image, LayoutDashboard, Link, LogOut, Mail, MessageCircle, Plus, Radio, ScrollText, Search, Send, Settings, ShieldCheck, Skull, Sparkles, Store, Swords, Target, Trash2, Trophy, UserRound, Users, Wifi, Zap } })
+  createIcons({ icons: { Activity, Ban, Bell, BookOpen, ChevronDown, Clock3, Flame, Heart, LayoutDashboard, Link, LogOut, Mail, MessageCircle, Plus, Radio, ScrollText, Search, Send, Settings, ShieldCheck, Skull, Sparkles, Store, Swords, Target, Trophy, UserRound, Users, Wifi, Zap } })
   bindEvents()
   if (state.screen === 'battle') { mountVideoCard(); updateStatusPanels() }
   if ((state.screen === 'home' || state.screen === 'dashboard') && state.homeMode === 'online' && !state.roomFeedConnected && !state.roomFeedConnecting && !state.roomFeedSocket) connectOnline('list')
@@ -193,7 +191,7 @@ function loadingFighterCard(player, index) {
   const rankUser = state.online ? (state.onlinePlayerNames?.[index] || '') : (index === 0 ? (state.currentUser?.username || 'Jogador') : 'Jogador 2')
   const fighterRank = getPlayerRank(rankUser)
   return `<div class="load-fighter" style="--accent:${character.accent}">
-    <div class="load-fighter-art">${icon ? `<img src="${MEDIA_BASE_URL}${icon}" alt="${character.name}">` : `<span>${character.name.slice(0, 2).toUpperCase()}</span>`}</div>
+    <div class="load-fighter-art">${icon ? `<img src="${mediaUrl(icon)}" alt="${character.name}">` : `<span>${character.name.slice(0, 2).toUpperCase()}</span>`}</div>
     <strong>${escapeHtml(character.name)}</strong>
     <small>${escapeHtml(label)}</small>
     <span class="load-fighter-rank-badge" style="--rank-color:${fighterRank.color}; color:${fighterRank.color}">★ ${escapeHtml(fighterRank.label.toUpperCase())}</span>
@@ -249,10 +247,10 @@ function shiftLoadingTip(step) {
 }
 
 function renderCharacterSelect() {
-  return `<section class="character-select-screen"><div class="character-select-panel"><p class="eyebrow">A SALA ESTÁ COMPLETA</p><h1>ESCOLHA SEU PERSONAGEM</h1><p class="character-select-copy">A escolha é secreta. O oponente verá apenas quando a partida começar.</p><div class="character-select-timer">${Math.max(0, state.characterTimeLeft)}s</div><div class="character-choice-grid">${Object.values(characters).map((character) => { const icon = videoManifest[character.id]?.icon; return `<button class="character-choice ${state.characterChoice === character.id ? 'selected' : ''}" data-character-choice="${character.id}">${icon ? `<img class="character-choice-icon" src="${MEDIA_BASE_URL}${icon}" alt="${character.name}">` : '<span class="character-choice-placeholder">' + character.name.slice(0, 2).toUpperCase() + '</span>'}<strong>${character.name}</strong><small>${character.title}</small></button>` }).join('')}</div><p class="character-select-status">${state.characterChoice ? (state.characterOpponentChosen ? 'Oponente escolheu. Aguardando resolução...' : 'Escolha registrada. Aguardando o oponente...') : 'Escolha um personagem para continuar.'}</p></div></section>`
+  return `<section class="character-select-screen"><div class="character-select-panel"><p class="eyebrow">A SALA ESTÁ COMPLETA</p><h1>ESCOLHA SEU PERSONAGEM</h1><p class="character-select-copy">A escolha é secreta. O oponente verá apenas quando a partida começar.</p><div class="character-select-timer">${Math.max(0, state.characterTimeLeft)}s</div><div class="character-choice-grid">${Object.values(characters).map((character) => { const icon = videoManifest[character.id]?.icon; return `<button class="character-choice ${state.characterChoice === character.id ? 'selected' : ''}" data-character-choice="${character.id}">${icon ? `<img class="character-choice-icon" src="${mediaUrl(icon)}" alt="${character.name}">` : '<span class="character-choice-placeholder">' + character.name.slice(0, 2).toUpperCase() + '</span>'}<strong>${character.name}</strong><small>${character.title}</small></button>` }).join('')}</div><p class="character-select-status">${state.characterChoice ? (state.characterOpponentChosen ? 'Oponente escolheu. Aguardando resolução...' : 'Escolha registrada. Aguardando o oponente...') : 'Escolha um personagem para continuar.'}</p></div></section>`
 }
 
-const adminTabs = [{ id: 'upload', label: 'IMAGENS E ÍCONES' }]
+const adminTabs = [{ id: 'upload', label: 'UPLOAD DE VÍDEOS' }]
 
 function renderAdmin() {
   return `<section class="admin-shell">
@@ -268,7 +266,6 @@ function renderAdmin() {
 function renderAccountAccess() {
   const isRegister = state.authMode === 'register'
   return `<section class="admin-login-shell">
-    ${renderUpdateBanner()}
     <form class="admin-login-panel" data-auth-form>
       <div class="ops-brand"><span>LA</span><div><strong>LEET ARENA</strong><small>Conta da arena</small></div></div>
       <div class="auth-switch"><button type="button" class="${!isRegister ? 'active' : ''}" data-auth-mode="login">ENTRAR</button><button type="button" class="${isRegister ? 'active' : ''}" data-auth-mode="register">CRIAR CONTA</button></div>
@@ -282,9 +279,16 @@ function renderAccountAccess() {
 }
 
 function renderAdminUploadTab() {
+  const upload = state.adminUpload
+  const character = characters[upload.character] ?? characters.cedric
+  const idleCharacter = characters[state.adminIdle.character] ?? characters.cedric
+  const iconCharacter = characters[state.adminIcon.character] ?? characters.cedric
+  const existing = videoManifest[upload.character] ?? {}
+  const idleExisting = videoManifest[state.adminIdle.character] ?? {}
+  const iconExisting = videoManifest[state.adminIcon.character] ?? {}
   return `<div class="admin-upload">
     <section class="admin-idle admin-idle-feature">
-      <div class="admin-idle-heading"><div><p class="panel-label">CENÁRIO BASE DO PERSONAGEM</p><h2>Imagem fixa do personagem</h2><small>Essa imagem aparece durante a partida no lugar das animações de vídeo.</small></div><span class="idle-badge">IMAGEM</span></div>
+      <div class="admin-idle-heading"><div><p class="panel-label">CENÁRIO BASE DO PERSONAGEM</p><h2>Imagem fixa entre os turnos</h2><small>Essa imagem aparece no turno 0 e volta assim que os vídeos terminam.</small></div><span class="idle-badge">IMAGEM</span></div>
       <label class="admin-field"><span>PERSONAGEM DA IMAGEM</span>
         <select data-admin-idle-character>${Object.values(characters).map((item) => `<option value="${item.id}" ${item.id === state.adminIdle.character ? 'selected' : ''}>${item.name}</option>`).join('')}</select>
       </label>
@@ -300,6 +304,24 @@ function renderAdminUploadTab() {
       <label class="admin-field"><span>ESCOLHER ÍCONE (.png, .jpg ou .webp)</span><input type="file" accept="image/png,image/jpeg,image/webp" data-admin-icon-file /></label>
       <button class="primary-button small" data-action="admin-upload-icon">ENVIAR ÍCONE</button>
       <p class="admin-status">${state.adminIcon.status}</p>
+    </section>
+    <section class="admin-idle admin-idle-feature admin-video-panel">
+      <div class="admin-idle-heading"><div><p class="panel-label">ENVIAR VÍDEO DE HABILIDADE</p><h2>Habilidades e animações</h2><small>Os vídeos ficam separados por personagem e efeito, sem pré-visualização no painel.</small></div><span class="idle-badge">VÍDEO</span></div>
+      <label class="admin-field"><span>PERSONAGEM</span>
+        <select data-admin-character>${Object.values(characters).map((item) => `<option value="${item.id}" ${item.id === upload.character ? 'selected' : ''}>${item.name}</option>`).join('')}</select>
+      </label>
+      <label class="admin-field"><span>HABILIDADE</span>
+        <select data-admin-ability>${character.abilities.map((ability) => `<option value="${ability.id}" ${ability.id === upload.ability ? 'selected' : ''}>${ability.name}${existing[ability.id] ? ' ✓' : ''}</option>`).join('')}</select>
+      </label>
+      <label class="admin-field"><span>ARQUIVO DE VÍDEO (.mp4)</span>
+        <input type="file" accept="video/mp4,video/webm" data-admin-file />
+      </label>
+      <button class="primary-button small" data-action="admin-upload">ENVIAR VÍDEO</button>
+      <p class="admin-status">${upload.status}</p>
+      <div class="admin-video-list">
+        <p class="panel-label">VÍDEOS JÁ ENVIADOS — ${character.name.toUpperCase()}</p>
+        ${character.abilities.map((ability) => `<div class="admin-video-row"><span>${ability.name}</span><strong>${existing[ability.id] ? 'ENVIADO' : 'PENDENTE'}</strong></div>`).join('')}
+      </div>
     </section>
   </div>`
 }
@@ -344,21 +366,22 @@ function renderGameSetupMenu() {
     <div class="identity-item identity-stack">
       <button class="profile-avatar-corner" type="button" data-action="open-profile" title="Perfil do jogador"><span class="account-rune">${avatar ? `<img src="${avatar}" alt="Avatar de ${escapeHtml(nickname)}">` : initials}</span></button>
       <small>Perfil</small>
+      <button class="rank-badge shop-badge" type="button" data-action="open-coming-soon" data-coming-soon="Loja" title="Loja"><i data-lucide="Store"></i></button>
+      <small>Loja</small>
       <button class="rank-badge chat-badge" type="button" data-action="open-chat" title="Chat geral"><i data-lucide="MessageCircle"></i></button>
       <small>Chat</small>
     </div>
-    <div class="identity-item"><button class="rank-badge shop-badge" type="button" data-action="open-coming-soon" data-coming-soon="Loja" title="Loja"><i data-lucide="Store"></i></button><small>Loja</small></div>
     <div class="identity-item"><button class="rank-badge" type="button" data-action="open-leaderboard" style="--rank-color:${rank.color}" title="${escapeHtml(rank.tooltip)}"><i data-lucide="Trophy"></i>${rank.shortLabel ? `<span>${rank.shortLabel}</span>` : ''}</button><small>Ranking</small></div>
-    <div class="identity-item"><button class="rank-badge" type="button" data-action="open-events" title="Eventos"><i data-lucide="Radio"></i></button><small>Eventos</small></div>
+    <div class="identity-item"><button class="rank-badge" type="button" data-action="open-coming-soon" data-coming-soon="Eventos" title="Eventos"><i data-lucide="Radio"></i></button><small>Eventos</small></div>
     <div class="identity-item"><button class="rank-badge" type="button" data-action="open-coming-soon" data-coming-soon="Torneios" title="Torneios"><i data-lucide="Swords"></i></button><small>Torneios</small></div>
+    <div class="identity-item"><button class="rank-badge" type="button" data-action="open-codex" title="Livro dos personagens"><i data-lucide="BookOpen"></i></button><small>Livro</small></div>
+    <div class="identity-item"><button class="rank-badge" type="button" data-action="open-mailbox" title="Correio"><i data-lucide="Mail"></i>${unread ? '<b class="mail-dot"></b>' : ''}</button><small>Correio</small></div>
   </div>
   <div class="setup-corner"><button class="setup-gear" data-action="toggle-setup" title="Setup do jogo"><i data-lucide="Settings"></i></button>${state.setupOpen ? `<div class="setup-popover"><button data-action="check-update"><i data-lucide="Activity"></i><span>Verificar atualização</span></button>${state.currentUser?.role === 'admin' ? '<button data-action="open-admin"><i data-lucide="LayoutDashboard"></i><span>Painel de controle</span></button>' : ''}<button data-action="account-logout"><i data-lucide="LogOut"></i><span>Sair da conta</span></button>${state.updateError ? `<small>${state.updateError}</small>` : ''}</div>` : ''}</div>
   ${state.leaderboardOpen ? renderLeaderboardModal() : ''}
-  ${state.eventsOpen ? renderEventsModal() : ''}
   ${state.comingSoonOpen ? renderComingSoonModal() : ''}
   ${state.codexOpen ? renderCodexModal() : ''}
   ${state.mailboxOpen ? renderMailboxModal() : ''}
-  ${state.avatarPickerOpen ? renderAvatarPickerModal() : ''}
   ${state.chatOpen ? renderChatModal() : ''}`
 }
 
@@ -425,8 +448,6 @@ function renderMailboxModal() {
 }
 
 function renderCodexModal() {
-  const selectedCharacter = state.codexCharacter ? characters[state.codexCharacter] : null
-  const selectedIcon = selectedCharacter ? videoManifest[selectedCharacter.id]?.icon : ''
   return `<div class="profile-overlay" data-action="close-codex-backdrop">
     <div class="profile-panel codex-panel" role="dialog" aria-modal="true" aria-label="Livro dos personagens">
       <button class="profile-close" data-action="close-codex" title="Fechar">✕</button>
@@ -437,25 +458,20 @@ function renderCodexModal() {
           <h2>Habilidades</h2>
         </div>
       </div>
-      <div class="codex-icon-grid">
+      <div class="codex-list">
         ${Object.values(characters).map((character) => {
           const icon = videoManifest[character.id]?.icon
-          return `<button class="codex-avatar-button ${state.codexCharacter === character.id ? 'selected' : ''}" data-codex-character="${character.id}" title="Ver habilidades de ${character.name}">
-            <span class="codex-avatar">${icon ? `<img src="${MEDIA_BASE_URL}${icon}" alt="${character.name}">` : character.name.slice(0, 2).toUpperCase()}</span>
-            <small>${escapeHtml(character.name)}</small>
-          </button>`
+          const open = state.codexCharacter === character.id
+          return `<div class="codex-entry ${open ? 'open' : ''}">
+            <button class="codex-tab" data-codex-character="${character.id}">
+              <span class="codex-avatar">${icon ? `<img src="${mediaUrl(icon)}" alt="${character.name}">` : character.name.slice(0, 2).toUpperCase()}</span>
+              <span class="codex-tab-copy"><strong>${character.name}</strong><small>${character.title} · ${character.hp} HP</small></span>
+              <span class="codex-arrow">${open ? '−' : '+'}</span>
+            </button>
+            <div class="codex-drawer" ${open ? '' : 'hidden'}>${character.abilities.map((ability) => `<article class="codex-ability"><strong>${escapeHtml(ability.name)}</strong><div class="codex-ability-detail">${escapeHtml(ability.detail)}</div></article>`).join('')}</div>
+          </div>`
         }).join('')}
       </div>
-      ${selectedCharacter ? `<div class="codex-character-overlay">
-        <div class="codex-character-card" role="dialog" aria-label="Habilidades de ${escapeHtml(selectedCharacter.name)}">
-          <button class="profile-close" data-action="close-codex-character" title="Fechar">✕</button>
-          <div class="codex-character-head">
-            <span class="codex-avatar large">${selectedIcon ? `<img src="${MEDIA_BASE_URL}${selectedIcon}" alt="${selectedCharacter.name}">` : selectedCharacter.name.slice(0, 2).toUpperCase()}</span>
-            <div><p>${escapeHtml(selectedCharacter.title)}</p><h3>${escapeHtml(selectedCharacter.name)}</h3><small>${selectedCharacter.hp} HP</small></div>
-          </div>
-          <div class="codex-drawer">${selectedCharacter.abilities.map((ability) => `<article class="codex-ability"><strong>${escapeHtml(ability.name)}</strong><div class="codex-ability-detail">${escapeHtml(ability.detail)}</div></article>`).join('')}</div>
-        </div>
-      </div>` : ''}
     </div>
   </div>`
 }
@@ -467,7 +483,9 @@ function renderProfileModal() {
   const avatar = getPlayerAvatar(username)
   const rank = getPlayerRank(username)
   const stats = getPlayerStats(username)
-  const unread = getUnreadMailCount()
+  const availableAvatars = Object.values(characters)
+    .map((character) => ({ character, path: videoManifest[character.id]?.icon }))
+    .filter((item) => item.path)
   return `<div class="profile-overlay" data-action="close-profile-backdrop">
     <div class="profile-panel" role="dialog" aria-modal="true" aria-label="Perfil do jogador">
       <div class="profile-header">
@@ -496,10 +514,11 @@ function renderProfileModal() {
           <small>${rank.progressText}</small>
         </div>
       </div>
-      <div class="profile-shortcuts">
-        <button type="button" data-action="open-avatar-picker"><i data-lucide="UserRound"></i><span>Avatar</span></button>
-        <button type="button" data-action="open-codex"><i data-lucide="BookOpen"></i><span>Livro</span></button>
-        <button type="button" data-action="open-mailbox"><i data-lucide="Mail"></i><span>Correio</span>${unread ? '<b class="mail-dot"></b>' : ''}</button>
+      <div class="profile-field profile-avatar-field">
+        <span>ESCOLHA SEU AVATAR</span>
+        <div class="profile-avatar-options">
+          ${availableAvatars.length ? availableAvatars.map(({ character, path }) => `<button type="button" class="profile-avatar-option ${avatar === mediaUrl(path) ? 'selected' : ''}" data-profile-avatar="${path}" title="Usar ícone de ${character.name}"><img src="${mediaUrl(path)}" alt="${character.name}"></button>`).join('') : '<small class="profile-avatar-empty">Nenhum ícone foi publicado ainda.</small>'}
+        </div>
       </div>
       <div class="profile-account-line">
         <small>Login da conta</small>
@@ -508,23 +527,6 @@ function renderProfileModal() {
       <a class="community-button" href="https://chat.whatsapp.com/KIZI0MaKVJC6084CIXicNy?s=cl&p=a&mlu=4&ilr=4" target="_blank" rel="noopener noreferrer"><i data-lucide="Users"></i><span>Comunidade</span></a>
       <div class="profile-actions">
         <button type="button" class="primary-button" data-action="close-profile">OK</button>
-      </div>
-    </div>
-  </div>`
-}
-
-function renderAvatarPickerModal() {
-  const username = state.currentUser?.username || 'Jogador'
-  const avatar = getPlayerAvatar(username)
-  const availableAvatars = Object.values(characters)
-    .map((character) => ({ character, path: videoManifest[character.id]?.icon }))
-    .filter((item) => item.path)
-  return `<div class="profile-overlay avatar-picker-overlay" data-action="close-avatar-picker-backdrop">
-    <div class="profile-panel avatar-picker-panel" role="dialog" aria-modal="true" aria-label="Escolha de avatar">
-      <button class="profile-close" data-action="close-avatar-picker" title="Fechar">✕</button>
-      <div class="profile-header"><span class="profile-avatar"><i data-lucide="UserRound"></i></span><div><p>PERFIL</p><h2>Avatar</h2></div></div>
-      <div class="profile-avatar-options">
-        ${availableAvatars.length ? availableAvatars.map(({ character, path }) => `<button type="button" class="profile-avatar-option ${avatar === `${MEDIA_BASE_URL}${path}` ? 'selected' : ''}" data-profile-avatar="${path}" title="Usar ícone de ${character.name}"><img src="${MEDIA_BASE_URL}${path}" alt="${character.name}"></button>`).join('') : '<small class="profile-avatar-empty">Nenhum ícone foi publicado ainda.</small>'}
       </div>
     </div>
   </div>`
@@ -696,17 +698,61 @@ function renderLeaderboardModal() {
   const userRank = getPlayerRank(username)
   return `<div class="profile-overlay" data-action="close-leaderboard-backdrop">
     <div class="profile-panel leaderboard-panel" role="dialog" aria-modal="true" aria-label="Ranking dos jogadores">
-      <button class="profile-close" data-action="close-leaderboard" title="Fechar">✕</button>
       <div class="profile-header">
         <span class="profile-avatar"><i data-lucide="Trophy"></i></span>
         <div>
           <p>RANKING DA ARENA</p>
-          <h2 class="leaderboard-title">Ranking Global <button type="button" class="ranking-info-button" data-action="open-ranking-info" title="Como funciona o ranking">ℹ️</button></h2>
+          <h2>Melhores jogadores</h2>
         </div>
       </div>
-      ${state.rankingInfoOpen ? renderRankingInfoModal() : ''}
-      <div class="ranking-user-status">
-        <span>Seu elo: <strong style="color:${userRank.color}">${userRank.label}</strong> (${userRank.wins} vitórias online) · <small>${userRank.progressText}</small></span>
+      <div class="ranking-info-card">
+        <div class="ranking-info-header">
+          <span class="ranking-info-icon">ℹ️</span>
+          <div>
+            <strong>SISTEMA DE PROGRESSÃO E RANKING</strong>
+            <small>Vença partidas para subir de elo na arena</small>
+          </div>
+        </div>
+        <div class="ranking-progression-list">
+          <div class="ranking-tier-step" style="--tier-color:#8a928d">
+            <span class="tier-badge">Ferro</span>
+            <span class="tier-arrow">→</span>
+            <span class="tier-req"><b>0</b> vitórias</span>
+          </div>
+          <div class="ranking-tier-step" style="--tier-color:#b37346">
+            <span class="tier-badge">Madeira</span>
+            <span class="tier-arrow">→</span>
+            <span class="tier-req"><b>10</b> vitórias</span>
+          </div>
+          <div class="ranking-tier-step" style="--tier-color:#cd7f32">
+            <span class="tier-badge">Bronze</span>
+            <span class="tier-arrow">→</span>
+            <span class="tier-req"><b>15</b> vitórias</span>
+          </div>
+          <div class="ranking-tier-step" style="--tier-color:#c7cdd1">
+            <span class="tier-badge">Prata</span>
+            <span class="tier-arrow">→</span>
+            <span class="tier-req"><b>20</b> vitórias</span>
+          </div>
+          <div class="ranking-tier-step" style="--tier-color:#d7ad2e">
+            <span class="tier-badge">Ouro</span>
+            <span class="tier-arrow">→</span>
+            <span class="tier-req"><b>30</b> vitórias</span>
+          </div>
+          <div class="ranking-tier-step" style="--tier-color:#5bc8f5">
+            <span class="tier-badge">Diamante</span>
+            <span class="tier-arrow">→</span>
+            <span class="tier-req"><b>40</b> vitórias</span>
+          </div>
+          <div class="ranking-tier-step" style="--tier-color:#ff4655">
+            <span class="tier-badge">Mestre</span>
+            <span class="tier-arrow">→</span>
+            <span class="tier-req"><b>55</b> vitórias</span>
+          </div>
+        </div>
+        <div class="ranking-user-status">
+          <span>Seu elo: <strong style="color:${userRank.color}">${userRank.label}</strong> (${userRank.wins} vitórias) · <small>${userRank.progressText}</small></span>
+        </div>
       </div>
       <div class="leaderboard-list">
         ${entries.map((entry, index) => `<div class="leaderboard-row ${entry.isYou ? 'own' : ''}">
@@ -715,70 +761,8 @@ function renderLeaderboardModal() {
           <span class="leaderboard-tier" style="--rank-color:${entry.color}">${entry.label}<b>${entry.wins}V</b></span>
         </div>`).join('')}
       </div>
-    </div>
-  </div>`
-}
-
-function renderRankingInfoModal() {
-  return `<div class="ranking-info-overlay">
-    <div class="ranking-info-modal" role="dialog" aria-modal="true" aria-label="Como funciona o ranking">
-      <button class="profile-close" data-action="close-ranking-info" title="Fechar">✕</button>
-      <div class="ranking-info-header"><strong>Como subir de rank</strong><small>Somente partidas do Duelo Online contam para o ranking.</small></div>
-      <div class="ranking-progression-list">
-        <span>Ferro: 0 vitórias</span>
-        <span>Madeira: 10 vitórias</span>
-        <span>Bronze: 15 vitórias</span>
-        <span>Prata: 20 vitórias</span>
-        <span>Ouro: 30 vitórias</span>
-        <span>Diamante: 40 vitórias</span>
-        <span>Mestre: 55 vitórias</span>
-      </div>
-    </div>
-  </div>`
-}
-
-function getEventsList() {
-  try {
-    const list = JSON.parse(localStorage.getItem('leet-arena-events') || 'null')
-    if (Array.isArray(list)) return list.slice(0, 3)
-  } catch {}
-  return [
-    {
-      id: 'event-default-1',
-      title: 'Grande Torneio da Arena',
-      description: 'Dispute partidas no Duelo Online para subir de ranking e desbloquear patentes exclusivas!',
-      image: '/assets/arena/arena-background.png',
-      createdAt: Date.now()
-    }
-  ]
-}
-
-function saveEventsList(list) {
-  localStorage.setItem('leet-arena-events', JSON.stringify(list.slice(0, 3)))
-}
-
-function renderEventsModal() {
-  const events = getEventsList()
-  return `<div class="profile-overlay" data-action="close-events-backdrop">
-    <div class="profile-panel events-panel" role="dialog" aria-modal="true" aria-label="Eventos da arena">
-      <button class="profile-close" data-action="close-events" title="Fechar">✕</button>
-      <div class="profile-header">
-        <span class="profile-avatar"><i data-lucide="Radio"></i></span>
-        <div>
-          <p>ARENA DE BATALHA</p>
-          <h2>Eventos</h2>
-        </div>
-      </div>
-      <div class="events-list">
-        ${events.length ? events.map((event) => `<article class="event-card">
-          <div class="event-banner-wrap">
-            <img src="${escapeHtml(event.image || '/assets/arena/arena-background.png')}" alt="${escapeHtml(event.title)}">
-          </div>
-          <div class="event-copy">
-            <strong>${escapeHtml(event.title)}</strong>
-            <p>${escapeHtml(event.description)}</p>
-          </div>
-        </article>`).join('') : '<p class="profile-avatar-empty">Nenhum evento ativo no momento.</p>'}
+      <div class="profile-actions">
+        <button type="button" class="primary-button" data-action="close-leaderboard">OK</button>
       </div>
     </div>
   </div>`
@@ -809,7 +793,6 @@ function renderDashboard() {
       <nav class="ops-nav" aria-label="Navegação principal">
         ${dashboardNavItem('overview', 'LayoutDashboard', 'Visão Geral')}
         ${dashboardNavItem('battles', 'Swords', 'Combates')}
-        ${dashboardNavItem('events', 'Radio', 'Eventos')}
         ${dashboardNavItem('players', 'Users', 'Jogadores')}
         ${dashboardNavItem('feed', 'ScrollText', 'Registro de Eventos')}
         ${dashboardNavItem('mail', 'Mail', 'Correio')}
@@ -832,7 +815,6 @@ function renderOpsHeader() {
   return `<header class="ops-header">
     <div><p>PAINEL DE CONTROLE</p><h1>${dashboardTitle()}</h1></div>
     <div class="ops-header-actions">
-      <button class="game-access-button" data-action="go-home"><i data-lucide="Swords"></i><span>IR AO GAME</span></button>
       <button class="icon-button" data-action="toggle-search" title="Pesquisar"><i data-lucide="Search"></i></button>
       <button class="icon-button notification-button" data-action="notifications" title="Notificações"><i data-lucide="Bell"></i><span></span></button>
       <button class="profile-button" data-dashboard-tab="settings"><span>${(state.currentUser?.username || 'AD').slice(0, 2).toUpperCase()}</span><strong>${state.currentUser?.username || 'Administrador'}</strong><i data-lucide="ChevronDown"></i></button>
@@ -843,46 +825,16 @@ function renderOpsHeader() {
 }
 
 function dashboardTitle() {
-  return ({ overview: 'Visão Geral', battles: 'Combates', events: 'Gerenciar Eventos', players: 'Jogadores', feed: 'Registro de Eventos', mail: 'Correio', settings: 'Configurações' })[state.dashboardTab] || 'Visão Geral'
+  return ({ overview: 'Visão Geral', battles: 'Combates', players: 'Jogadores', feed: 'Registro de Eventos', mail: 'Correio', settings: 'Configurações' })[state.dashboardTab] || 'Visão Geral'
 }
 
 function renderDashboardContent() {
   if (state.dashboardTab === 'battles') return renderBattlesWorkspace()
-  if (state.dashboardTab === 'events') return renderEventsAdminWorkspace()
   if (state.dashboardTab === 'players') return renderPlayersWorkspace()
   if (state.dashboardTab === 'feed') return renderEventWorkspace()
   if (state.dashboardTab === 'mail') return renderMailWorkspace()
   if (state.dashboardTab === 'settings') return renderSettingsWorkspace()
   return renderOverviewWorkspace()
-}
-
-function renderEventsAdminWorkspace() {
-  const events = getEventsList()
-  const draft = state.adminEvent || { title: '', description: '', image: '', file: null, status: '' }
-  const canAdd = events.length < 3
-  return `<div class="ops-workspace single"><section class="workspace-panel">
-    <div class="section-heading"><div><p>GERENCIAR EVENTOS</p><h2>Publicação de Banners (16:9) · Máximo 3</h2></div><span class="status-badge"><i data-lucide="Radio"></i>${events.length}/3 ativos</span></div>
-    ${canAdd ? `
-    <div class="admin-event-form">
-      <label class="admin-login-field"><span>TÍTULO DO EVENTO</span><input data-event-title value="${escapeHtml(draft.title)}" placeholder="Ex.: Grande Torneio da Arena"></label>
-      <label class="admin-login-field"><span>DESCRIÇÃO / LEGENDA</span><textarea data-event-desc rows="3" placeholder="Escreva os detalhes e regras do evento...">${escapeHtml(draft.description)}</textarea></label>
-      <label class="admin-login-field"><span>IMAGEM DO BANNER (Proporção 16:9)</span><input type="file" accept="image/png,image/jpeg,image/webp" data-event-file></label>
-      <button class="admin-login-submit" data-action="create-event">PUBLICAR EVENTO</button>
-      <p class="admin-status">${escapeHtml(draft.status || '')}</p>
-    </div>` : '<div class="ops-notice">Limite máximo de 3 eventos ativos atingido. Remova um evento abaixo para publicar um novo banner.</div>'}
-    <div class="admin-events-list">
-      <p class="panel-label">EVENTOS ATIVOS NO JOGO (${events.length}/3)</p>
-      ${events.length ? events.map((event) => `<div class="admin-event-item">
-        <div class="admin-event-preview"><img src="${escapeHtml(event.image || '/assets/arena/arena-background.png')}" alt="${escapeHtml(event.title)}"></div>
-        <div class="admin-event-item-info">
-          <strong>${escapeHtml(event.title)}</strong>
-          <p>${escapeHtml(event.description)}</p>
-          <small>Publicado em ${new Date(event.createdAt || Date.now()).toLocaleDateString('pt-BR')}</small>
-        </div>
-        <button class="admin-event-delete-btn" data-action="delete-event" data-event-id="${escapeHtml(event.id)}">Remover</button>
-      </div>`).join('') : '<p class="muted">Nenhum evento cadastrado no momento.</p>'}
-    </div>
-  </section></div>`
 }
 
 function renderMailWorkspace() {
@@ -1092,7 +1044,7 @@ function renderBattle() {
   const p1Rank = getPlayerRank(p1User)
   const p2Rank = getPlayerRank(p2User)
   return `<section class="battle-shell">
-    <header class="battle-topbar"><div class="top-player"><strong>${battleSlotLabel(0, p1)}</strong><span class="top-player-rank" style="--rank-color:${p1Rank.color}; color:${p1Rank.color}">★ ${escapeHtml(p1Rank.label.toUpperCase())}</span><div class="top-hp"><i style="width:${p1Percent}%; background:${getHpBarColor(p1Percent)}"></i><span class="top-hp-value">${p1.hp}/${p1.maxHp}</span></div></div><div class="turn-count">TURNO <strong>${state.turn}</strong><span class="turn-timer">${Math.max(0, state.turnTimeLeft)}s</span></div><div class="top-player opponent"><strong>${battleSlotLabel(1, p2)}</strong><span class="top-player-rank" style="--rank-color:${p2Rank.color}; color:${p2Rank.color}">★ ${escapeHtml(p2Rank.label.toUpperCase())}</span><div class="top-hp"><i style="width:${p2Percent}%; background:${getHpBarColor(p2Percent)}"></i><span class="top-hp-value">${p2.hp}/${p2.maxHp}</span></div></div></header>
+    <header class="battle-topbar"><div class="top-player"><strong>${battleSlotLabel(0, p1)}</strong><span class="top-player-rank" style="--rank-color:${p1Rank.color}; color:${p1Rank.color}">★ ${escapeHtml(p1Rank.label.toUpperCase())}</span>${hpDeltaBadge(0)}<div class="top-hp"><i style="width:${p1Percent}%; background:${getHpBarColor(p1Percent)}"></i><span class="top-hp-value">${p1.hp}/${p1.maxHp}</span></div></div><div class="turn-count">TURNO <strong>${state.turn}</strong><span class="turn-timer">${Math.max(0, state.turnTimeLeft)}s</span></div><div class="top-player opponent"><strong>${battleSlotLabel(1, p2)}</strong><span class="top-player-rank" style="--rank-color:${p2Rank.color}; color:${p2Rank.color}">★ ${escapeHtml(p2Rank.label.toUpperCase())}</span>${hpDeltaBadge(1)}<div class="top-hp"><i style="width:${p2Percent}%; background:${getHpBarColor(p2Percent)}"></i><span class="top-hp-value">${p2.hp}/${p2.maxHp}</span></div></div></header>
     <div class="battle-layout">
       <div class="arena-column">
         ${lastActionPanel()}
@@ -1109,9 +1061,17 @@ function renderBattle() {
     ${renderForesightPickerModal()}
     ${renderPressurePickerModal()}
     ${renderActionNoticeModal()}
-    ${finished ? renderUpdateBanner() : ''}
     ${state.chatOpen ? renderChatModal() : ''}
   </section>`
+}
+
+function hpDeltaBadge(index) {
+  const delta = state.hpDeltas?.[index]
+  if (!delta) return ''
+  return `<span class="hp-delta-stack">
+    ${delta.damage ? `<b class="hp-delta damage">-${delta.damage}</b>` : ''}
+    ${delta.heal ? `<b class="hp-delta heal">+${delta.heal}</b>` : ''}
+  </span>`
 }
 
 function renderPressurePickerModal() {
@@ -1135,17 +1095,13 @@ function renderPressurePickerModal() {
 function renderForesightPickerModal() {
   if (!state.foresightPickerOpen) return ''
   const activeIndex = state.online ? state.playerIndex : state.phase === 'p1' ? 0 : 1
-  const activePlayer = state.players[activeIndex]
   const opponent = state.players[activeIndex === 0 ? 1 : 0]
   if (!opponent) return ''
-  const predictor = activePlayer?.character.abilities.find((ability) => ability.id === state.foresightPickerOpen || (state.foresightPickerOpen === true && ability.kind === 'foresight'))
-  const isAnalysis = predictor?.kind === 'analysis'
-  const title = isAnalysis ? 'ANÁLISE' : predictor?.kind === 'sany-research' ? 'PESQUISA' : 'PREMONIÇÃO'
-  const options = opponent.character.abilities.filter((ability) => !isPassiveAbility(ability) && (!isAnalysis || ability.id !== 'basic'))
+  const options = opponent.character.abilities.filter((ability) => !isPassiveAbility(ability))
   return `<div class="modal-overlay">
     <div class="modal-card deny-picker">
-      <p class="modal-title">${title}</p>
-      <p class="modal-sub">Qual ${isAnalysis ? 'habilidade' : 'ação'} ${escapeHtml(opponent.name)} usará neste turno?</p>
+      <p class="modal-title">PREMONIÇÃO</p>
+      <p class="modal-sub">Qual ação ${escapeHtml(opponent.name)} usará no próximo turno?</p>
       <div class="deny-options">${options.map((ability) => `<button class="deny-option" data-foresight-target="${ability.id}">${escapeHtml(ability.name)}</button>`).join('')}</div>
       <div class="modal-btns">
         <button class="primary-button small secondary" data-action="cancel-foresight">CANCELAR</button>
@@ -1200,9 +1156,9 @@ function renderSurrenderModal() {
 }
 
 function lastActionPanel() {
-  const latest = state.lastTurnActions.length ? state.lastTurnActions : [{ text: 'Aguardando escolhas' }, { text: 'Aguardando escolhas' }]
-  const formatAction = (entry) => entry?.text || 'Aguardando escolhas'
-  return `<div class="last-action"><div class="last-action-title">TURNO ANTERIOR</div><div class="last-action-copy"><strong>${formatAction(latest[0])}</strong><span class="crossed-swords">⚔</span><strong>${formatAction(latest[1])}</strong></div></div>`
+  const latest = state.lastTurnActions.length ? state.lastTurnActions : [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }]
+  const formatAction = (entry) => entry.player ? `${entry.player}: ${entry.text}` : entry.text
+  return `<div class="last-action"><div class="last-action-title">ÚLTIMA AÇÃO</div><div class="last-action-copy"><strong>${formatAction(latest[0])}</strong><span class="crossed-swords">⚔</span><strong>${formatAction(latest[1])}</strong></div></div>`
 }
 
 function fighterCard(player, index) {
@@ -1230,14 +1186,6 @@ function actionPanel(player, opponent) {
     return `<div class="action-panel"><div class="waiting-opponent"><span class="pulse-dot">●</span><strong>AGUARDANDO A JOGADA DO OPONENTE ⏳</strong><small>O oponente usou Atrapalhar, forçando você a pular o turno.</small></div>
     <button class="skip-button" data-action="skip">CONTINUAR</button></div>`
   }
-  if (player.ogroForcedAbilityId) {
-    const forcedName = player.ogroForcedAbilityName || abilityNameById(player, selectedAbilityId(player.ogroForcedAbilityId))
-    const message = player.forcedRandomReason === 'throw'
-      ? `Morgg te jogou pro alto! Você se assustou e usou 1 habilidade aleatória: ${forcedName}.`
-      : `Morgg está te segurando! Você só conseguiu usar 1 habilidade aleatória: ${forcedName}.`
-    return `<div class="action-panel"><div class="waiting-opponent"><span class="pulse-dot">●</span><strong>AGUARDANDO A JOGADA DO OPONENTE ⏳</strong><small>${escapeHtml(message)}</small></div>
-    <button class="skip-button" data-action="use-forced-random">CONTINUAR</button></div>`
-  }
   const forcedBasicNow = player.forcedBasicTurns > 0 && state.turn >= player.forcedBasicStartsTurn
   return `<div class="action-panel"><div class="action-header"><div><p class="eyebrow">${phase === 'p1' ? 'JOGADOR 1' : 'JOGADOR 2'} / ${state.onlineWaiting ? 'AGUARDANDO OPONENTE' : 'ESCOLHA OCULTA'}</p><h3>${selected ? 'AÇÃO SELECIONADA' : `ESCOLHA DE ${player.name.toUpperCase()}`}</h3></div><span class="lock-icon">${selected ? '◉' : '○'}</span></div>
     <div class="action-buttons">${basic ? abilityButton(player, opponent, basic, selected) : ''}${secondary ? abilityButton(player, opponent, secondary, selected) : ''}${passives.length ? passiveInfoButton(passives) : ''}</div>
@@ -1248,7 +1196,7 @@ function actionPanel(player, opponent) {
 }
 
 function isPassiveAbility(ability) {
-  return ['rancor', 'rumination', 'zero-evolution', 'zero-survival', 'haku-last-dance', 'haku-concentration', 'kiro-luck', 'sany-courage', 'sany-last-chance', 'resistance', 'patience', 'tribute', 'nox-progression'].includes(ability.kind)
+  return ['zero-evolution', 'zero-survival', 'haku-last-dance', 'haku-concentration', 'kiro-luck', 'sany-courage', 'sany-last-chance', 'resistance', 'patience', 'tribute', 'nox-progression'].includes(ability.kind)
 }
 
 function passiveInfoButton(passives) {
@@ -1260,55 +1208,7 @@ function selectedAbilityId(selection) {
   return String(selection || '').split(':')[0]
 }
 
-function abilityNameById(player, abilityId) {
-  return player?.character?.abilities.find((ability) => ability.id === abilityId)?.name || abilityId || 'habilidade'
-}
-
-const abilityIcons = {
-  damage: 'Swords',
-  predatory: 'Zap',
-  mark: 'Target',
-  execute: 'Skull',
-  bindings: 'Link',
-  rage: 'Flame',
-  impulse: 'Zap',
-  heal: 'Heart',
-  deny: 'Ban',
-  sacrifice: 'Flame',
-  resurrect: 'Heart',
-  taunt: 'Radio',
-  'broken-limit': 'Zap',
-  drain: 'Heart',
-  foresight: 'Sparkles',
-  harvest: 'Clock3',
-  'second-life': 'ShieldCheck',
-  'nox-mark': 'Target',
-  'nox-trigger': 'Zap',
-  'nox-pressure': 'Ban',
-  counter: 'ShieldCheck',
-  retaliation: 'Swords',
-  dodge: 'Zap',
-  'zero-best': 'Trophy',
-  analysis: 'Search',
-  'haku-defense': 'ShieldCheck',
-  'haku-dance': 'Swords',
-  'haku-deep-cut': 'Skull',
-  'ogro-grab': 'Link',
-  'ogro-squeeze': 'Flame',
-  'ogro-release': 'LogOut',
-  'ogro-kick': 'Zap',
-  'ogro-roar': 'Radio',
-  'ogro-throw': 'Sparkles',
-  'kiro-reduction': 'ShieldCheck',
-  'kiro-strengthen': 'Flame',
-  'kiro-disrupt': 'Ban',
-  'kiro-double': 'Swords',
-  'sany-lucky': 'Sparkles',
-  'sany-amplify': 'Zap',
-  'sany-research': 'Search',
-  rancor: 'Flame',
-  rumination: 'Clock3',
-}
+const abilityIcons = { damage: 'Swords', predatory: 'Zap', mark: 'Target', execute: 'Skull', bindings: 'Link', rage: 'Flame', impulse: 'Zap', heal: 'Heart', deny: 'Ban', 'ogro-grab': 'Link', 'ogro-squeeze': 'Flame', 'ogro-release': 'LogOut', 'ogro-kick': 'Zap', 'ogro-roar': 'Activity', 'ogro-throw': 'Sparkles' }
 
 function abilityButton(player, opponent, ability, selected) {
   const disabled = isAbilityUnavailable(player, opponent, ability) || state.onlineWaiting
@@ -1322,14 +1222,12 @@ function abilityButton(player, opponent, ability, selected) {
 
 function isAbilityUnavailable(player, opponent, ability) {
   const forcedBasic = player.forcedBasicTurns > 0 && state.turn >= player.forcedBasicStartsTurn
-  if (isPassiveAbility(ability)) return true
-  if (player.ogroForcedAbilityId) return ability.id !== selectedAbilityId(player.ogroForcedAbilityId)
+  if (player.ogroForcedAbilityId) return ability.id !== player.ogroForcedAbilityId
   return (forcedBasic && ability.id !== 'basic')
     || (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id !== 'deep-cut')
     || (player.character?.id === 'ogro' && player.ogroGrabActive && ability.id !== 'squeeze' && ability.id !== 'release')
     || (player.character?.id === 'ogro' && !player.ogroGrabActive && (ability.id === 'squeeze' || ability.id === 'release'))
     || (ability.uses !== undefined && player.uses[ability.id] === 0)
-    || (ability.kind === 'mark' && opponent.markActive && opponent.markSource === 'cedric')
     || (ability.kind === 'impulse' && player.rage < 55)
     || (ability.kind === 'heal' && player.rage < 30)
     || (ability.kind === 'deny' && player.rage < 25)
@@ -1342,40 +1240,9 @@ function isAbilityUnavailable(player, opponent, ability) {
 }
 
 function randomAbilityId(player, opponent) {
-  return selectedAbilityId(randomAbilitySelection(player, opponent))
-}
-
-function randomAbilitySelection(player, opponent) {
-  const previousForced = player.ogroForcedAbilityId
-  player.ogroForcedAbilityId = null
   const options = player.character.abilities.filter((ability) => !isAbilityUnavailable(player, opponent, ability))
-  player.ogroForcedAbilityId = previousForced
   const pool = options.length ? options : [{ id: 'basic' }]
-  const ability = pool[Math.floor(Math.random() * pool.length)]
-  if (ability.kind === 'foresight' || ability.kind === 'sany-research') {
-    const targets = opponent.character.abilities.filter((item) => !isPassiveAbility(item))
-    const target = targets[Math.floor(Math.random() * targets.length)]
-    return target ? `${ability.id}:${target.id}` : ability.id
-  }
-  if (ability.kind === 'analysis') {
-    const targets = opponent.character.abilities.filter((item) => !isPassiveAbility(item) && item.id !== 'basic')
-    const target = targets[Math.floor(Math.random() * targets.length)]
-    return target ? `${ability.id}:${target.id}` : ability.id
-  }
-  if (ability.kind === 'nox-pressure') {
-    const targets = opponent.character.abilities.filter((item) => !isPassiveAbility(item))
-    const target = targets[Math.floor(Math.random() * targets.length)]
-    return target ? `${ability.id}:${target.id}` : ability.id
-  }
-  return ability.id
-}
-
-function assignOgroForcedAbility(player, opponent, reason) {
-  const selection = randomAbilitySelection(player, opponent)
-  const ability = buildSelectedAbility(player, selection, opponent)
-  player.ogroForcedAbilityId = selection
-  player.ogroForcedAbilityName = ability.name
-  player.forcedRandomReason = reason
+  return pool[Math.floor(Math.random() * pool.length)].id
 }
 
 function resultPanel() {
@@ -1392,28 +1259,33 @@ function loadMediaAsset(relativeUrl) {
   if (!normalized) return Promise.resolve(null)
   if (mediaCache.has(normalized)) return Promise.resolve(mediaCache.get(normalized))
 
-  const url = `${MEDIA_BASE_URL}${normalized}`
+  const url = mediaUrl(normalized)
   const isImage = /\.(png|jpe?g|webp)$/i.test(normalized)
-  if (!isImage) return Promise.resolve(null)
 
   return new Promise((resolve) => {
-    let finished = false
     const finish = (asset) => {
-      if (finished) return
-      finished = true
-      if (asset) {
-        mediaCache.set(normalized, asset)
-        preloadedMedia.push(asset)
-      }
+      mediaCache.set(normalized, asset)
+      preloadedMedia.push(asset)
       resolve(asset)
     }
 
-    const timer = setTimeout(() => finish(null), 800)
-    const image = new Image()
-    image.decoding = 'async'
-    image.onload = () => { clearTimeout(timer); finish(image) }
-    image.onerror = () => { clearTimeout(timer); finish(null) }
-    image.src = url
+    if (isImage) {
+      const image = new Image()
+      image.decoding = 'async'
+      image.onload = () => finish(image)
+      image.onerror = () => finish(null)
+      image.src = url
+      return
+    }
+
+    const video = document.createElement('video')
+    video.preload = 'auto'
+    video.muted = true
+    video.playsInline = true
+    video.oncanplaythrough = () => finish(video)
+    video.onerror = () => finish(null)
+    video.src = url
+    video.load()
   })
 }
 
@@ -1422,39 +1294,32 @@ async function preloadBattleMedia() {
   preloadedMedia.length = 0
   const urls = []
   state.players.forEach((player) => {
-    const entries = videoManifest[player?.character?.id] ?? {}
+    const entries = videoManifest[player.character.id] ?? {}
     Object.values(entries).forEach((relativeUrl) => {
-      if (relativeUrl && /\.(png|jpe?g|webp)$/i.test(relativeUrl) && !urls.includes(relativeUrl)) {
-        urls.push(relativeUrl)
-      }
+      if (relativeUrl && !urls.includes(relativeUrl)) urls.push(relativeUrl)
     })
   })
   state.battleLoadTotal = urls.length
   state.battleLoadProgress = urls.length ? 0 : 100
-  state.battleLoadStatus = urls.length ? 'Carregando personagens...' : 'Arena pronta.'
+  state.battleLoadStatus = urls.length ? 'Carregando mídias da partida...' : 'Arena pronta.'
   render()
 
-  if (urls.length) {
-    let loaded = 0
-    const markLoaded = () => {
-      loaded += 1
-      state.battleLoadProgress = Math.min(100, Math.round((loaded / urls.length) * 100))
-      state.battleLoadStatus = `Carregando personagem ${loaded} de ${urls.length}...`
-      render()
-    }
-
-    await Promise.race([
-      Promise.all(urls.map(async (relativeUrl) => {
-        await loadMediaAsset(relativeUrl)
-        markLoaded()
-      })),
-      new Promise((resolve) => setTimeout(resolve, 1500)),
-    ])
+  let loaded = 0
+  const markLoaded = () => {
+    loaded += 1
+    state.battleLoadProgress = (loaded / Math.max(1, urls.length)) * 100
+    state.battleLoadStatus = `Carregando mídia ${loaded} de ${urls.length}...`
+    render()
   }
+
+  await Promise.all(urls.map(async (relativeUrl) => {
+    const asset = await loadMediaAsset(relativeUrl)
+    if (asset) markLoaded()
+    else markLoaded()
+  }))
 
   state.battleLoadProgress = 100
   state.battleLoadStatus = 'Arena pronta.'
-  render()
 }
 
 function statusPanelMarkup() {
@@ -1569,11 +1434,11 @@ function createVideoCard() {
   card.className = 'video-card'
   card.innerHTML = `
     <div class="player-card-wrap p1">
-      <div class="video-slot"><span class="video-slot-label">JOGADOR 1</span><img class="idle-frame" alt="" hidden></div>
+      <div class="video-slot"><span class="video-slot-label">JOGADOR 1</span><img class="idle-frame" alt="" hidden><video playsinline hidden></video></div>
       ${statusPanelMarkup()}
     </div>
     <div class="player-card-wrap p2">
-      <div class="video-slot"><span class="video-slot-label">JOGADOR 2</span><img class="idle-frame" alt="" hidden></div>
+      <div class="video-slot"><span class="video-slot-label">JOGADOR 2</span><img class="idle-frame" alt="" hidden><video playsinline hidden></video></div>
       ${statusPanelMarkup()}
     </div>
   `
@@ -1595,21 +1460,87 @@ function updateIdleFrames() {
     const image = slot?.querySelector('.idle-frame')
     if (!image) return
     const idleUrl = getVideoUrl(player.character.id, 'idle')
-    if (idleUrl) image.src = `${MEDIA_BASE_URL}${idleUrl}`
+    if (idleUrl) image.src = mediaUrl(idleUrl)
     else image.removeAttribute('src')
     image.hidden = !idleUrl
   })
 }
 
 function getVideoUrl(characterId, abilityId) {
-  if (abilityId !== 'idle' && abilityId !== 'icon') return null
   return videoManifest[characterId]?.[abilityId] ?? null
+}
+
+function enqueueTurnVideos(p1Url, p2Url) {
+  if (!p1Url && !p2Url) return
+  state.videoQueue = [{ p1: p1Url, p2: p2Url }]
+  stopCurrentVideos()
+  playNextVideoItem()
+}
+
+function playSlot(slotEl, url) {
+  const video = slotEl.querySelector('video')
+  video.onended = null
+  video.onerror = null
+  video.onplaying = null
+  video.classList.remove('is-ready')
+  slotEl.hidden = false
+  if (!url) {
+    video.pause()
+    video.currentTime = 0
+    video.hidden = true
+    return null
+  }
+  video.hidden = false
+  const finalUrl = mediaUrl(url)
+  if (video.src !== finalUrl && !video.src.endsWith(encodeURI(url))) {
+    video.src = finalUrl
+    video.load()
+  }
+  video.muted = false
+  video.volume = 1
+  video.currentTime = 0
+  video.onplaying = () => video.classList.add('is-ready')
+  return video
+}
+
+function stopCurrentVideos() {
+  if (!videoCardEl) return
+  videoCardEl.querySelectorAll('video').forEach((video) => {
+    video.pause()
+    video.onended = null
+    video.onerror = null
+    video.onplaying = null
+    video.classList.remove('is-ready')
+    video.currentTime = 0
+    video.hidden = true
+  })
+  state.videoPlaying = false
+}
+
+function playNextVideoItem() {
+  const item = state.videoQueue.shift()
+  if (!videoCardEl || !item) { state.videoPlaying = false; return }
+  state.videoPlaying = true
+  videoCardEl.hidden = false
+  updateIdleFrames()
+  const p1Video = playSlot(videoCardEl.querySelector('.p1'), item.p1)
+  const p2Video = playSlot(videoCardEl.querySelector('.p2'), item.p2)
+  let pending = (p1Video ? 1 : 0) + (p2Video ? 1 : 0)
+  // Ao terminar, o vídeo some e a imagem neutra do personagem volta a aparecer.
+  const finish = (video) => { video.classList.remove('is-ready'); video.hidden = true; pending -= 1; if (pending <= 0) state.videoPlaying = false }
+  if (p1Video) { p1Video.onended = () => finish(p1Video); p1Video.onerror = () => finish(p1Video) }
+  if (p2Video) { p2Video.onended = () => finish(p2Video); p2Video.onerror = () => finish(p2Video) }
+  if (pending === 0) { state.videoPlaying = false; return }
+  Promise.all([p1Video, p2Video].filter(Boolean).map((video) => video.play().catch(() => {
+    // Sem gesto do usuário o Android pode recusar áudio; repete sem som para não travar o turno.
+    video.muted = true
+    return video.play().catch(() => null)
+  })))
 }
 
 async function loadVideoManifest() {
   try {
-    const response = await fetch(`${MEDIA_BASE_URL}/manifest.json?t=${Date.now()}`, { cache: 'no-store' })
-    videoManifest = await response.json()
+    videoManifest = await loadMediaManifest()
   } catch { videoManifest = {} }
   updateIdleFrames()
 }
@@ -1646,7 +1577,7 @@ function bindEvents() {
   document.querySelector('[data-action="show-battle2v2-mode"]')?.addEventListener('click', () => { state.homeMode = 'battle2v2'; state.modeDrawerEntering = true; clearOnlineSession(); render(); })
   document.querySelector('[data-action="show-tournament-mode"]')?.addEventListener('click', () => { state.homeMode = 'tournament'; state.modeDrawerEntering = true; clearOnlineSession(); render(); })
   document.querySelectorAll('[data-action="close-mode-drawer"]').forEach((element) => element.addEventListener('click', () => { state.homeMode = ''; state.modeDrawerEntering = false; clearOnlineSession(); render(); }))
-  document.querySelector('[data-action="open-codex"]')?.addEventListener('click', () => { state.profileOpen = false; state.avatarPickerOpen = false; state.codexCharacter = ''; state.codexOpen = true; render() })
+  document.querySelector('[data-action="open-codex"]')?.addEventListener('click', () => { state.codexOpen = true; render() })
   document.querySelector('[data-action="open-chat"]')?.addEventListener('click', () => {
     state.chatTab = 'general'
     state.chatOpen = true
@@ -1676,10 +1607,9 @@ function bindEvents() {
   })
   document.querySelectorAll('[data-action="next-tip"]').forEach((element) => element.addEventListener('click', (event) => { event.stopPropagation(); shiftLoadingTip(1) }))
   document.querySelector('[data-action="prev-tip"]')?.addEventListener('click', (event) => { event.stopPropagation(); shiftLoadingTip(-1) })
-  document.querySelector('[data-action="close-codex"]')?.addEventListener('click', () => { state.codexOpen = false; state.codexCharacter = ''; render() })
-  document.querySelector('[data-action="close-codex-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.codexOpen = false; state.codexCharacter = ''; render() } })
-  document.querySelector('[data-action="close-codex-character"]')?.addEventListener('click', () => { state.codexCharacter = ''; render() })
-  document.querySelectorAll('[data-codex-character]').forEach((button) => button.addEventListener('click', () => { state.codexCharacter = button.dataset.codexCharacter; render() }))
+  document.querySelector('[data-action="close-codex"]')?.addEventListener('click', () => { state.codexOpen = false; render() })
+  document.querySelector('[data-action="close-codex-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.codexOpen = false; render() } })
+  document.querySelectorAll('[data-codex-character]').forEach((button) => button.addEventListener('click', () => { state.codexCharacter = state.codexCharacter === button.dataset.codexCharacter ? '' : button.dataset.codexCharacter; render() }))
   document.querySelector('[data-action="create-online"]')?.addEventListener('click', () => {
     if (state.roomFeedConnecting && state.socket) return
     startMusic(); connectOnline('create')
@@ -1700,12 +1630,6 @@ function bindEvents() {
   document.querySelector('[data-action="restart"]')?.addEventListener('click', () => { state.screen = 'home'; render() })
   document.querySelector('[data-action="next-player"]')?.addEventListener('click', confirmSelection)
   document.querySelector('[data-action="skip"]')?.addEventListener('click', skipTurn)
-  document.querySelector('[data-action="use-forced-random"]')?.addEventListener('click', () => {
-    const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
-    const activeIndex = state.online ? state.playerIndex : state.phase === 'p1' ? 0 : 1
-    const player = state.players[activeIndex]
-    if (player?.ogroForcedAbilityId) chooseAbility(phase, player.ogroForcedAbilityId)
-  })
   document.querySelector('[data-action="prompt-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = true; render(); })
   document.querySelector('[data-action="cancel-surrender"]')?.addEventListener('click', () => { state.showSurrenderModal = false; render(); })
   document.querySelector('[data-action="close-action-notice"]')?.addEventListener('click', () => { state.actionNotice = ''; render(); })
@@ -1749,8 +1673,8 @@ function bindEvents() {
         render()
         return
       }
-      if (ability?.kind === 'foresight' || ability?.kind === 'sany-research' || ability?.kind === 'analysis') {
-        state.foresightPickerOpen = ability.id
+      if (ability?.kind === 'foresight') {
+        state.foresightPickerOpen = true
         render()
         return
       }
@@ -1790,9 +1714,8 @@ function bindEvents() {
   document.querySelector('[data-action="cancel-deny"]')?.addEventListener('click', () => { state.denyPickerOpen = false; render() })
   document.querySelectorAll('[data-foresight-target]').forEach((button) => button.addEventListener('click', () => {
     const phase = state.online ? `p${state.playerIndex + 1}` : state.phase
-    const predictor = state.foresightPickerOpen || 'foresight'
     state.foresightPickerOpen = false
-    chooseAbility(phase, `${predictor}:${button.dataset.foresightTarget}`)
+    chooseAbility(phase, `foresight:${button.dataset.foresightTarget}`)
   }))
   document.querySelector('[data-action="cancel-foresight"]')?.addEventListener('click', () => { state.foresightPickerOpen = false; render() })
   document.querySelectorAll('[data-pressure-target]').forEach((button) => button.addEventListener('click', () => {
@@ -1805,50 +1728,11 @@ function bindEvents() {
   document.querySelector('[data-action="exit-update"]')?.addEventListener('click', exitApp)
   document.querySelector('[data-action="check-update"]')?.addEventListener('click', checkForUpdateNow)
   document.querySelector('[data-action="open-profile"]')?.addEventListener('click', () => { state.profileDraft = getPlayerNickname(state.currentUser?.username || 'Jogador'); state.profileOpen = true; render() })
-  document.querySelector('[data-action="close-profile"]')?.addEventListener('click', () => { state.profileOpen = false; state.avatarPickerOpen = false; state.profileDraft = ''; render() })
-  document.querySelector('[data-action="close-profile-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.profileOpen = false; state.avatarPickerOpen = false; state.profileDraft = ''; render() } })
-  document.querySelector('[data-action="open-avatar-picker"]')?.addEventListener('click', () => { state.avatarPickerOpen = true; render() })
-  document.querySelector('[data-action="close-avatar-picker"]')?.addEventListener('click', () => { state.avatarPickerOpen = false; render() })
-  document.querySelector('[data-action="close-avatar-picker-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.avatarPickerOpen = false; render() } })
-  document.querySelector('[data-action="open-leaderboard"]')?.addEventListener('click', () => { state.leaderboardOpen = true; state.rankingInfoOpen = false; render() })
-  document.querySelector('[data-action="close-leaderboard"]')?.addEventListener('click', () => { state.leaderboardOpen = false; state.rankingInfoOpen = false; render() })
-  document.querySelector('[data-action="close-leaderboard-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.leaderboardOpen = false; state.rankingInfoOpen = false; render() } })
-  document.querySelector('[data-action="open-ranking-info"]')?.addEventListener('click', () => { state.rankingInfoOpen = true; render() })
-  document.querySelector('[data-action="close-ranking-info"]')?.addEventListener('click', () => { state.rankingInfoOpen = false; render() })
-  document.querySelector('[data-action="open-events"]')?.addEventListener('click', () => { state.eventsOpen = true; render() })
-  document.querySelector('[data-action="close-events"]')?.addEventListener('click', () => { state.eventsOpen = false; render() })
-  document.querySelector('[data-action="close-events-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.eventsOpen = false; render() } })
-  document.querySelector('[data-event-title]')?.addEventListener('input', (event) => { state.adminEvent.title = event.target.value })
-  document.querySelector('[data-event-desc]')?.addEventListener('input', (event) => { state.adminEvent.description = event.target.value })
-  document.querySelector('[data-event-file]')?.addEventListener('change', (event) => {
-    const file = event.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      state.adminEvent.image = reader.result
-      state.adminEvent.status = 'Imagem carregada com sucesso.'
-      render()
-    }
-    reader.readAsDataURL(file)
-  })
-  document.querySelector('[data-action="create-event"]')?.addEventListener('click', () => {
-    const title = (state.adminEvent.title || '').trim()
-    const description = (state.adminEvent.description || '').trim()
-    const image = state.adminEvent.image || '/assets/arena/arena-background.png'
-    if (!title) { state.adminEvent.status = 'Preencha o título do evento.'; render(); return }
-    const current = getEventsList()
-    if (current.length >= 3) { state.adminEvent.status = 'Limite máximo de 3 eventos atingido.'; render(); return }
-    const newEvent = { id: `event-${Date.now()}`, title, description, image, createdAt: Date.now() }
-    saveEventsList([...current, newEvent])
-    state.adminEvent = { title: '', description: '', image: '', file: null, status: 'Evento publicado com sucesso!' }
-    render()
-  })
-  document.querySelectorAll('[data-action="delete-event"]').forEach((button) => button.addEventListener('click', () => {
-    const eventId = button.dataset.eventId
-    const current = getEventsList().filter((e) => e.id !== eventId)
-    saveEventsList(current)
-    render()
-  }))
+  document.querySelector('[data-action="close-profile"]')?.addEventListener('click', () => { state.profileOpen = false; state.profileDraft = ''; render() })
+  document.querySelector('[data-action="close-profile-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.profileOpen = false; state.profileDraft = ''; render() } })
+  document.querySelector('[data-action="open-leaderboard"]')?.addEventListener('click', () => { state.leaderboardOpen = true; render() })
+  document.querySelector('[data-action="close-leaderboard"]')?.addEventListener('click', () => { state.leaderboardOpen = false; render() })
+  document.querySelector('[data-action="close-leaderboard-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.leaderboardOpen = false; render() } })
   document.querySelectorAll('[data-action="open-coming-soon"]').forEach((button) => button.addEventListener('click', () => { state.comingSoonLabel = button.dataset.comingSoon || ''; state.comingSoonOpen = true; render() }))
   document.querySelector('[data-action="close-coming-soon"]')?.addEventListener('click', () => { state.comingSoonOpen = false; render() })
   document.querySelector('[data-action="close-coming-soon-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.comingSoonOpen = false; render() } })
@@ -1864,12 +1748,11 @@ function bindEvents() {
   })
   document.querySelectorAll('[data-profile-avatar]').forEach((button) => button.addEventListener('click', () => {
     const username = state.currentUser?.username || 'Jogador'
-    setPlayerAvatar(`${MEDIA_BASE_URL}${button.dataset.profileAvatar}`, username)
+    setPlayerAvatar(mediaUrl(button.dataset.profileAvatar), username)
     render()
   }))
   document.querySelector('[data-action="toggle-setup"]')?.addEventListener('click', () => { state.setupOpen = !state.setupOpen; render() })
   document.querySelector('[data-action="open-admin"]')?.addEventListener('click', openAdminAccess)
-  document.querySelector('[data-action="go-home"]')?.addEventListener('click', () => { state.screen = 'home'; state.dashboardTab = 'overview'; render() })
   document.querySelector('[data-auth-form]')?.addEventListener('submit', authenticateAccount)
   document.querySelectorAll('[data-auth-mode]').forEach((button) => button.addEventListener('click', () => { state.authMode = button.dataset.authMode; state.authError = ''; render() }))
   document.querySelectorAll('[data-action="account-logout"]').forEach((button) => button.addEventListener('click', logoutAccount))
@@ -1890,8 +1773,6 @@ function bindEvents() {
   })
   document.querySelector('[data-action="open-mailbox"]')?.addEventListener('click', () => {
     saveMailbox(getMailbox().map((mail) => ({ ...mail, read: true })))
-    state.profileOpen = false
-    state.avatarPickerOpen = false
     state.mailboxOpen = true
     render()
   })
@@ -1899,6 +1780,12 @@ function bindEvents() {
   document.querySelector('[data-action="close-mailbox-backdrop"]')?.addEventListener('click', (event) => { if (event.target === event.currentTarget) { state.mailboxOpen = false; render() } })
   document.querySelector('[data-action="admin-back"]')?.addEventListener('click', () => { state.screen = 'dashboard'; render() })
   document.querySelectorAll('[data-admin-tab]').forEach((button) => button.addEventListener('click', () => { state.adminTab = button.dataset.adminTab; render() }))
+  document.querySelector('[data-admin-character]')?.addEventListener('change', (event) => {
+    state.adminUpload.character = event.target.value
+    state.adminUpload.ability = characters[event.target.value].abilities[0].id
+    state.adminUpload.status = ''
+    render()
+  })
   document.querySelector('[data-admin-idle-character]')?.addEventListener('change', (event) => {
     state.adminIdle.character = event.target.value
     state.adminIdle.status = ''
@@ -1909,8 +1796,11 @@ function bindEvents() {
     state.adminIcon.status = ''
     render()
   })
+  document.querySelector('[data-admin-ability]')?.addEventListener('change', (event) => { state.adminUpload.ability = event.target.value })
+  document.querySelector('[data-admin-file]')?.addEventListener('change', (event) => { state.adminUpload.file = event.target.files[0] || null })
   document.querySelector('[data-admin-idle-file]')?.addEventListener('change', (event) => { state.adminIdle.file = event.target.files[0] || null })
   document.querySelector('[data-admin-icon-file]')?.addEventListener('change', (event) => { state.adminIcon.file = event.target.files[0] || null })
+  document.querySelector('[data-action="admin-upload"]')?.addEventListener('click', uploadAdminVideo)
   document.querySelector('[data-action="admin-upload-idle"]')?.addEventListener('click', uploadAdminIdleImage)
   document.querySelector('[data-action="admin-upload-icon"]')?.addEventListener('click', uploadAdminIcon)
   document.querySelectorAll('[data-character-choice]').forEach((button) => button.addEventListener('click', () => chooseCharacter(button.dataset.characterChoice)))
@@ -1955,6 +1845,35 @@ function startCharacterTimer() {
       if (!state.characterChoice) chooseCharacter(Object.keys(characters)[Math.floor(Math.random() * Object.keys(characters).length)])
     }
   }, 1000)
+}
+
+async function uploadAdminVideo() {
+  const upload = state.adminUpload
+  if (!upload.file) { upload.status = 'Selecione um arquivo de vídeo.'; render(); return }
+  upload.status = 'Enviando...'
+  render()
+  try {
+    const response = await fetch(`${MEDIA_BASE_URL}/upload?character=${upload.character}&ability=${upload.ability}`, {
+      method: 'POST',
+      headers: { 'Content-Type': upload.file.type || 'video/mp4', Authorization: `Bearer ${state.authToken}` },
+      body: upload.file,
+    })
+    if (response.status === 401) {
+      logoutAccount('Sua sessão expirou. Entre novamente.')
+      return
+    }
+    if (!response.ok) {
+      let reason = `Servidor respondeu ${response.status}.`
+      try { reason = (await response.json()).error || reason } catch {}
+      throw new Error(reason)
+    }
+    await loadVideoManifest()
+    upload.status = 'Vídeo enviado com sucesso.'
+    upload.file = null
+  } catch (error) {
+    upload.status = error.message || 'Erro ao enviar o vídeo.'
+  }
+  render()
 }
 
 async function uploadAdminIdleImage() {
@@ -2023,13 +1942,18 @@ async function openAdminAccess() {
     return
   }
   try {
-    const response = await fetch(`${MEDIA_BASE_URL}/admin/session`, { headers: { Authorization: `Bearer ${state.authToken}` } })
-    if (!response.ok) throw new Error('expired')
+    const response = await authRequest('/admin/session', { token: state.authToken })
+    if (response.status === 401 || response.status === 403) {
+      clearStoredSession()
+      state.authError = 'Sua sessão expirou. Entre novamente.'
+      state.screen = 'auth'
+      render()
+      return
+    }
+    if (!response.ok) throw new Error(`Servidor respondeu ${response.status}.`)
     state.screen = state.screen === 'dashboard' ? 'admin' : 'dashboard'
-  } catch {
-    clearStoredSession()
-    state.authError = 'Sua sessão expirou. Entre novamente.'
-    state.screen = 'auth'
+  } catch (error) {
+    state.dashboardNotice = error.message || 'Não foi possível conectar ao painel.'
   }
   render()
 }
@@ -2191,19 +2115,14 @@ function skipTurn() {
 }
 
 async function startGame() {
-  const selects = [...document.querySelectorAll('[data-player]')].map((s) => s.value).filter((v) => v && characters[v])
-  const p1Id = selects[0] || 'cedric'
-  let p2Id = selects[1] || 'voss'
-  if (p1Id === p2Id) {
-    p2Id = Object.keys(characters).find((id) => id !== p1Id) || 'voss'
-  }
-  state.players = [createPlayer(characters[p1Id] || characters.cedric), createPlayer(characters[p2Id] || characters.voss)]
+  const ids = [...document.querySelectorAll('[data-player]')].map((select) => select.value)
+  state.players = ids.map((id) => createPlayer(characters[id]))
   state.screen = 'loading'; state.turn = 1; state.phase = 'p1'; state.selections = {}; state.log = []; state.result = ''; state.animation = null; state.online = false; state.onlineWaiting = false; state.opponentChosen = false; state.matchResultRecorded = false
-  state.lastTurnActions = [{ text: 'Aguardando escolhas' }, { text: 'Aguardando escolhas' }]
+  state.lastTurnActions = [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }]
+  state.hpDeltas = [null, null]
+  state.videoQueue = []; state.videoPlaying = false
   render()
-  try {
-    await preloadBattleMedia()
-  } catch {}
+  await preloadBattleMedia()
   state.screen = 'battle'
   startTurnTimer()
   startMusic()
@@ -2246,25 +2165,25 @@ function handleTurnTimeout() {
 let bgmAudio = null
 
 function startMusic() {
-  try {
-    if (!bgmAudio) {
-      bgmAudio = new Audio('/assets/audio/bgm.mp3')
-      bgmAudio.loop = true
-      bgmAudio.volume = 0.16
-    }
+  if (state.musicEnabled && bgmAudio && !bgmAudio.paused) return
+  if (!bgmAudio) {
+    bgmAudio = new Audio('/assets/audio/bgm.mp3')
     bgmAudio.loop = true
-    if (bgmAudio.paused) {
-      bgmAudio.play().then(() => {
-        state.musicEnabled = true
-      }).catch(() => {
-        state.musicEnabled = false
-      })
-    }
-  } catch {}
+    bgmAudio.volume = 0.16
+  }
+  bgmAudio.play().then(() => {
+    state.musicEnabled = true
+  }).catch(() => {
+    state.musicEnabled = false
+  })
 }
 
 function stopMusic() {
-  // Mantém a música ativa continuamente
+  state.musicEnabled = false
+  if (bgmAudio) {
+    bgmAudio.pause()
+    bgmAudio.currentTime = 0
+  }
 }
 
 function createPlayer(character) {
@@ -2332,9 +2251,7 @@ function createPlayer(character) {
     ogroGrabbedTurns: 0,
     ogroRoarTurns: 0,
     forcedRandomTurns: 0,
-    forcedRandomReason: '',
     ogroForcedAbilityId: null,
-    ogroForcedAbilityName: '',
     forcedSkipTurns: 0,
     forcedSkipReason: '',
     turnHealing: [],
@@ -2443,9 +2360,9 @@ function connectOnline(mode, selectedCode = '', retryCount = 0) {
 }
 
 async function handleOnlineMessage(message) {
-  if (message.type === 'general-chat-history') { state.generalChatMessages = (Array.isArray(message.messages) ? message.messages : []).slice(-30); if (state.chatOpen) render(); return }
-  if (message.type === 'general-chat') { state.generalChatMessages = [...state.generalChatMessages, message.message].slice(-30); if (state.chatOpen && state.chatTab === 'general') render(); return }
-  if (message.type === 'private-chat') { state.privateChatMessages = [...state.privateChatMessages, message.message].slice(-30); if (state.chatOpen && state.chatTab === 'private') render(); return }
+  if (message.type === 'general-chat-history') { state.generalChatMessages = Array.isArray(message.messages) ? message.messages : []; if (state.chatOpen) render(); return }
+  if (message.type === 'general-chat') { state.generalChatMessages = [...state.generalChatMessages, message.message].slice(-50); if (state.chatOpen && state.chatTab === 'general') render(); return }
+  if (message.type === 'private-chat') { state.privateChatMessages = [...state.privateChatMessages, message.message].slice(-50); if (state.chatOpen && state.chatTab === 'private') render(); return }
   if (message.type === 'public-rooms') { state.publicRooms = message.rooms; state.roomFeedConnecting = false; state.roomFeedConnected = true; state.onlineError = ''; render(); return }
   if (message.type === 'error') { state.onlineError = message.message; state.socket?.close(); state.screen = 'home'; render(); return }
   if (message.type === 'room-created') { state.online = true; state.playerIndex = 0; state.roomCode = message.code; state.createdRoomCode = message.code; state.screen = 'home'; render(); return }
@@ -2465,6 +2382,7 @@ async function handleOnlineMessage(message) {
     state.onlinePlayerNames = ordered.map((player) => player.name || '')
     state.players = ordered.map((player) => createPlayer(characters[player.character]))
     state.lastTurnActions = [{ player: '', text: 'Aguardando escolhas' }, { player: '', text: 'Aguardando escolhas' }]
+    state.hpDeltas = [null, null]
     state.matchResultRecorded = false
     state.phase = `p${state.playerIndex + 1}`; state.screen = 'loading'; render(); await preloadBattleMedia(); state.screen = 'battle'; startTurnTimer(); render(); return
   }
@@ -2524,10 +2442,6 @@ function resolveTurn() {
   })
   const a1 = resolveSelection(p1, state.selections.p1, p2)
   const a2 = resolveSelection(p2, state.selections.p2, p1)
-  if (['foresight', 'sany-research', 'analysis'].includes(a1.kind)) a1.predictionHit = a1.predictedId === a2.id && (a1.kind !== 'analysis' || a2.id !== 'basic')
-  if (['foresight', 'sany-research', 'analysis'].includes(a2.kind)) a2.predictionHit = a2.predictedId === a1.id && (a2.kind !== 'analysis' || a1.id !== 'basic')
-  if (a1.kind === 'haku-dance') a1.predictionHit = a2.id === 'basic'
-  if (a2.kind === 'haku-dance') a2.predictionHit = a1.id === 'basic'
   if (p1.character?.id === 'haku' && a1.kind === 'haku-dance' && a2.id === 'basic') p1.hakuBladeDanceArmed = true
   if (p2.character?.id === 'haku' && a2.kind === 'haku-dance' && a1.id === 'basic') p2.hakuBladeDanceArmed = true
   if (a1.id === 'basic' && a2.id === 'basic') {
@@ -2544,8 +2458,6 @@ function resolveTurn() {
   p2.turnReceivedHealing = 0
   p1.turnActionLabel = ''
   p2.turnActionLabel = ''
-  p1.turnPassiveLabels = []
-  p2.turnPassiveLabels = []
   const events = [`Turno ${state.turn}: ${p1.name} usou ${a1.name}${selectedAbilityId(state.selections.p1) !== a1.id ? ' (ação alterada).' : '.'}`, `Turno ${state.turn}: ${p2.name} usou ${a2.name}${selectedAbilityId(state.selections.p2) !== a2.id ? ' (ação alterada).' : '.'}`]
   const predatoryTriggers = new Set()
   if (triggerPredatory(p1, p2, a1, a2, events)) predatoryTriggers.add(p1)
@@ -2553,6 +2465,11 @@ function resolveTurn() {
   applyAction(p1, p2, a1, a2, events, predatoryTriggers); applyAction(p2, p1, a2, a1, events, predatoryTriggers)
   updateKynPassives(p1, a2, events)
   updateKynPassives(p2, a1, events)
+  state.hpDeltas = state.players.map((player) => {
+    const damage = player.turnReceivedDamage || 0
+    const heal = player.turnReceivedHealing || 0
+    return damage || heal ? { damage, heal } : null
+  })
   state.lastTurnActions = [
     { player: p1.name, text: formatActionText(p1, state.selections.p1, a1) },
     { player: p2.name, text: formatActionText(p2, state.selections.p2, a2) },
@@ -2568,32 +2485,31 @@ function resolveTurn() {
         const youWon = state.playerIndex === 0 ? p2.hp <= 0 && p1.hp > 0 : p1.hp <= 0 && p2.hp > 0
         const youLost = state.playerIndex === 0 ? p1.hp <= 0 && p2.hp > 0 : p2.hp <= 0 && p1.hp > 0
         recordMatchResult(youWon ? 'win' : youLost ? 'loss' : 'draw')
+      } else {
+        const youWon = p2.hp <= 0 && p1.hp > 0
+        const youLost = p1.hp <= 0 && p2.hp > 0
+        recordMatchResult(youWon ? 'win' : youLost ? 'loss' : 'draw')
       }
     }
   }
+  enqueueTurnVideos(getVideoUrl(p1.character.id, a1.id), getVideoUrl(p2.character.id, a2.id))
   const cedricAttacker = shouldAnimateCedricBasic(p1, a1) ? 0 : shouldAnimateCedricBasic(p2, a2) ? 1 : -1
   state.animation = cedricAttacker === -1 ? null : { impact: false, targetIndex: cedricAttacker === 0 ? 1 : 0 }
   state.turn += 1; state.phase = 'p1'; state.selections = {}
   if (state.result) stopTurnTimer()
   else startTurnTimer()
   render()
-  if (state.result) refreshWebUpdateNotice()
 }
 
 function formatActionText(player, selectedId, ability) {
-  const hits = (player.turnDamage || []).filter((v) => v > 0).map((value) => `${value}💥`).join(' ')
-  const heals = (player.turnHealing || []).filter((v) => v > 0).map((value) => `+${value}💚`).join(' ')
+  const hits = (player.turnDamage || []).map((value) => `${value}💥`).join(' ')
+  const heals = (player.turnHealing || []).map((value) => `+${value}💚`).join(' ')
+  const label = player.turnActionLabel || ability.name
   const suffix = [hits, heals].filter(Boolean).join(' ')
-  let label = `Usou ${ability.name}.`
-  if (ability.id === 'basic' && ability.kind === 'damage') label = `Usou Ataque Básico${hits ? `: ${hits}` : '.'}`
-  else if (selectedId === 'skip' || ability.kind === 'skip') label = 'Pulou o turno.'
-  else if (ability.kind === 'deny' || ability.id === 'denial') label = 'Ativou Negação.'
-  else if (ability.kind === 'haku-dance') label = `Usou ${ability.name} e ${ability.predictionHit ? 'acertou' : 'falhou'}.`
-  else if ((ability.kind === 'foresight' || ability.kind === 'sany-research' || ability.kind === 'analysis')) label = `Usou ${ability.name} e ${ability.predictionHit ? 'acertou' : 'falhou'}.`
-  else if (suffix) label = `Usou ${ability.name}: ${suffix}`
-  if (player.turnActionLabel) label = suffix ? `${player.turnActionLabel}: ${suffix}` : player.turnActionLabel
-  const passives = (player.turnPassiveLabels || []).map((text) => `<small>${escapeHtml(text)}</small>`).join('')
-  return `${escapeHtml(label)}${passives}`
+  if (selectedId === 'skip' || ability.kind === 'skip') return suffix ? `pulou turno ${suffix}` : 'pulou turno'
+  if (player.blockedAbilityId && ability.id === 'basic' && state.turn < player.blockedAbilityUntilTurn) return suffix ? `pulou turno ${suffix}` : 'pulou turno'
+  if (ability.kind === 'foresight' && ability.predictedId) return `${ability.name}: ${ability.predictedName || ability.predictedId}`
+  return suffix ? `${label} ${suffix}` : label
 }
 
 function shouldAnimateCedricBasic(player, ability) {
@@ -2603,14 +2519,16 @@ function shouldAnimateCedricBasic(player, ability) {
 function resolveSelection(player, selectedId, opponent) {
   if (player.forcedSkipTurns > 0) return { id: 'skip', name: 'Pulou turno', kind: 'skip' }
   if (player.ogroForcedAbilityId) {
-    return buildSelectedAbility(player, player.ogroForcedAbilityId, opponent)
+    return player.character.abilities.find((item) => item.id === player.ogroForcedAbilityId) ?? player.character.abilities[0]
   }
   const forcedBasic = player.forcedBasicTurns > 0 && state.turn >= player.forcedBasicStartsTurn
   if (selectedId === 'skip' && !forcedBasic) return { id: 'skip', name: 'Pulou turno', kind: 'skip' }
-  let ability = buildSelectedAbility(player, selectedId, opponent)
-  const [, predictedId] = String(selectedId || '').split(':')
-  const abilityId = selectedAbilityId(selectedId)
-  if (!abilityId) ability = player.character.abilities[0]
+  const [abilityId, predictedId] = String(selectedId || '').split(':')
+  let ability = player.character.abilities.find((item) => item.id === abilityId) ?? player.character.abilities[0]
+  if (ability.kind === 'foresight' && predictedId) {
+    const predicted = opponent.character.abilities.find((item) => item.id === predictedId)
+    ability = { ...ability, predictedId, predictedName: predicted?.name || predictedId }
+  }
   if (ability.kind === 'nox-pressure' && predictedId) {
     const target = opponent.character.abilities.find((item) => item.id === predictedId)
     ability = { ...ability, targetId: predictedId, targetName: target?.name || predictedId }
@@ -2631,30 +2549,15 @@ function resolveSelection(player, selectedId, opponent) {
   return ability
 }
 
-function buildSelectedAbility(player, selectedId, opponent) {
-  const [abilityId, predictedId] = String(selectedId || '').split(':')
-  let ability = player.character.abilities.find((item) => item.id === abilityId) ?? player.character.abilities[0]
-  if ((ability.kind === 'foresight' || ability.kind === 'sany-research' || ability.kind === 'analysis') && predictedId) {
-    const predicted = opponent.character.abilities.find((item) => item.id === predictedId)
-    ability = { ...ability, predictedId, predictedName: predicted?.name || predictedId }
-  }
-  if ((ability.kind === 'nox-pressure' || ability.kind === 'deny') && predictedId) {
-    const target = opponent.character.abilities.find((item) => item.id === predictedId)
-    ability = { ...ability, targetId: predictedId, targetName: target?.name || predictedId }
-  }
-  return ability
-}
-
 function getAbility(player, id) { return player.character.abilities.find((ability) => ability.id === id) ?? player.character.abilities[0] }
 
 function triggerPredatory(player, opponent, ability, opponentAbility, events) {
   const selectedPredatory = ability.kind === 'predatory'
   if ((!player.pendingPredatory && !selectedPredatory) || opponentAbility.id !== 'basic') return false
   player.pendingPredatory = false
-  player.turnActionLabel = 'Usou Ataque Predatório'
+  player.turnActionLabel = 'Ativou Ataque Predatório'
   if (selectedPredatory) consume(player, ability)
   player.turnDamage = [...(player.turnDamage || []), 160]
-  player.turnHealing = [...(player.turnHealing || []), 180]
   dealDamage(opponent, 160, events, `${player.name} ativou o Ataque predatório e causou 160 de dano.`)
   const recoveredHp = healPlayer(player, 180, events)
   events.push(recoveredHp > 0 ? `${player.name} recuperou ${recoveredHp} HP.` : `${player.name} tentou recuperar 180 HP, mas já estava com o HP cheio.`)
@@ -2672,7 +2575,6 @@ function trackCedricFrieza(target, ability, events) {
     target.friezaUses -= 1
     target.friezaBasicHits = 0
     const recovered = healPlayer(target, 300, events)
-    notePassive(target, 'Ativou Frieza.')
     events.push(`${target.name} ativou Frieza e recuperou ${recovered} HP.`)
   }
 }
@@ -2686,13 +2588,8 @@ function trackVossRumination(target, ability, events) {
     target.rage += 15
     target.ruminationHits = 0
     target.ruminationLastKind = null
-    notePassive(target, 'Ativou Ruminação.')
     events.push(`${target.name} ativou Ruminação e ganhou 15 de fúria.`)
   }
-}
-
-function notePassive(player, text) {
-  player.turnPassiveLabels = [...(player.turnPassiveLabels || []), text]
 }
 
 function recordDamage(target, amount) {
@@ -2735,7 +2632,6 @@ function updateKynPassives(player, opponentAbility, events) {
     player.noBasicTurns += 1
     if (player.noBasicTurns >= 3) {
       addKynDrain(player, 100, events, `${player.name} ativou Paciência e ganhou 100 de Dreno.`)
-      notePassive(player, 'Ativou Paciência.')
       player.noBasicTurns = 0
     }
   }
@@ -2743,7 +2639,6 @@ function updateKynPassives(player, opponentAbility, events) {
   player.noDrainTurns += 1
   if (player.noDrainTurns >= 3) {
     addKynDrain(player, 200, events, `${player.name} ativou Tributo e ganhou 200 de Dreno.`)
-    notePassive(player, 'Ativou Tributo.')
     player.hp = Math.max(1, player.hp - 150)
     player.noDrainTurns = 0
   }
@@ -2762,11 +2657,6 @@ function receiveDamage(target, amount, events, message) {
   if (target.character?.id === 'kiro' && target.kiroReductionTurns > 0) damage = Math.floor(damage * .7)
   if (target.character?.id === 'damon' && target.resistanceStacks > 0) damage = Math.max(0, damage - target.resistanceStacks * 5)
   if (target.character?.id === 'brick' && target.character?.id === 'brick' && target.resistanceStacks > 0) damage = Math.max(0, damage - target.resistanceStacks * 5)
-  if (target.character?.id === 'voss' && damage > 250) {
-    target.rage += 20
-    notePassive(target, 'Ativou Rancor.')
-    events.push(`${target.name} ativou Rancor e ganhou 20 de fúria.`)
-  }
   recordDamage(target, damage)
   target.turnReceivedDamage = (target.turnReceivedDamage || 0) + damage
   target.hp = Math.max(0, target.hp - damage)
@@ -2781,7 +2671,6 @@ function receiveDamage(target, amount, events, message) {
     target.sanyLastChanceUsed = true
     target.hp = 1
     target.uses['lucky-attack'] += 1
-    notePassive(target, 'Ativou Última chance.')
     events.push(`${target.name} ativou Última chance e ganhou 1 uso de Ataque de sorte.`)
   }
   if (target.hp <= 0 && target.character?.id === 'damon' && target.damonBasicHitsReceived >= 5) {
@@ -2817,10 +2706,7 @@ function addZeroExperience(player, amount, events) {
   player.zeroExperience += amount
   updateZeroLevel(player)
   events.push(`${player.name} ganhou ${amount} de experiência.`)
-  if (player.zeroLevel > oldLevel) {
-    notePassive(player, `Atingiu o nível ${player.zeroLevel}.`)
-    events.push(`${player.name} evoluiu para o nível ${player.zeroLevel}.`)
-  }
+  if (player.zeroLevel > oldLevel) events.push(`${player.name} evoluiu para o nível ${player.zeroLevel}.`)
 }
 
 function addNoxMark(player, opponent, amount, events) {
@@ -2872,6 +2758,14 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     player.blockedAbilityUntilTurn = 0
   }
   if (predatoryTriggers.has(player)) return
+  if (opponent.character?.id === 'sany' && opponent.sanyResearchArmed) {
+    if (ability.id === opponent.sanyResearchPrediction) {
+      opponent.uses['lucky-attack'] += 1
+      events.push(`${opponent.name} acertou a Pesquisa e ganhou 1 uso de Ataque de sorte.`)
+    }
+    opponent.sanyResearchArmed = false
+    opponent.sanyResearchPrediction = ''
+  }
   if (player.zeroBestCancelled) {
     player.zeroBestCancelled = false
     player.turnDamage = [...(player.turnDamage || []), 0]
@@ -2879,27 +2773,19 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     events.push(`${player.name} teve o ataque básico anulado por Sou o melhor! e causou 0 de dano.`)
     return
   }
-  if (player.character?.id === 'cedric' && opponent.markActive && opponent.markSource === 'cedric') {
-    if (ability.id !== 'basic' && ability.id !== 'mark') {
-      opponent.markActive = false
-      opponent.markBasicHits = 0
-      opponent.markSource = null
-      events.push(`${player.name} mudou de ação e perdeu a marca ativa em ${opponent.name}.`)
-    }
+  if (player.character?.id === 'zero' && player.zeroAnalysisArmed) {
+    if (ability.kind !== 'damage') addZeroExperience(player, 30, events)
+    player.zeroAnalysisArmed = false
   }
   if (player.character?.id === 'haku' && player.hakuDefenseTurns > 0 && ability.id === 'basic') return
   if (ability.kind === 'damage') {
     const hakuHits = player.character?.id === 'haku' && ability.id === 'basic' ? takeHakuHits(player, player.hakuLastDanceActive ? 2 : 1) : []
-    if (player.character?.id === 'haku' && ability.id === 'basic' && player.hakuLastDanceActive) notePassive(player, 'Ativou Última Dança.')
     const kynDrainDamage = player.character?.id === 'kyn' && ability.id === 'basic' ? player.drainAvailable : 0
     const baseDamage = hakuHits.length ? hakuHits.reduce((sum, value) => sum + value, 0) : ability.id === 'basic' ? getBasicDamage(player) + (player.permanentBasicBonus || 0) : ability.damage
-    const bonusParts = [player.nextBasicBonus, forcedBasicThisTurn ? (player.forcedBasicBonus || 0) : 0, player.basicDamageBonus || 0, kynDrainDamage].filter((value) => value > 0)
+    const bonusParts = [player.nextBasicBonus, forcedBasicThisTurn ? (player.forcedBasicBonus || 100) : 0, player.basicDamageBonus || 0, kynDrainDamage].filter((value) => value > 0)
     let damage = baseDamage + bonusParts.reduce((sum, value) => sum + value, 0)
     if (player.character?.id === 'kiro' && ability.id === 'basic') damage += player.kiroStrengthBonus
-    if (player.character?.id === 'sany' && ability.id === 'basic' && opponent.hp > player.hp) {
-      damage += 80
-      notePassive(player, 'Ativou Coragem.')
-    }
+    if (player.character?.id === 'sany' && ability.id === 'basic' && opponent.hp > player.hp) damage += 80
     if (player.character?.id === 'sany' && player.sanyAmplificationUntilTurn >= state.turn) damage = Math.floor(damage * 1.25)
     if (player.character?.id === 'damon' && player.damonBasicHitsReceived >= 0) damage += player.damonBasicBonus || 0
     const dodgeTarget = opponent.character?.id === 'brick' && opponent.nextTurnDodge
@@ -2929,47 +2815,23 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
       }
     }
     const luckBonus = player.character?.id === 'kiro' && ability.id === 'basic' && Math.random() < .3 ? 100 : 0
+    const displayedDamage = hakuHits.length ? hakuHits : ability.id === 'basic' ? [baseDamage, ...bonusParts] : [damage]
+    player.turnDamage = [...(player.turnDamage || []), ...displayedDamage, ...(markBonus ? [markBonus] : []), ...(luckBonus ? [luckBonus] : [])]
     const totalDamage = damage + markBonus
-    const firstDamage = totalDamage + luckBonus
-
-    const displayedDamageParts = []
-    if (hakuHits.length) {
-      displayedDamageParts.push(...hakuHits)
-    } else {
-      let mainPart = baseDamage
-      if (player.character?.id === 'sany' && ability.id === 'basic' && opponent.hp > player.hp) mainPart += 80
-      if (player.character?.id === 'damon' && (player.damonBasicBonus || 0) > 0) mainPart += player.damonBasicBonus
-      if (player.character?.id === 'kiro' && ability.id === 'basic') mainPart += player.kiroStrengthBonus
-      if (player.character?.id === 'sany' && player.sanyAmplificationUntilTurn >= state.turn) mainPart = Math.floor(mainPart * 1.25)
-      displayedDamageParts.push(mainPart)
-      for (const bonus of bonusParts) {
-        if (bonus > 0) displayedDamageParts.push(bonus)
-      }
-    }
-    if (markBonus > 0) displayedDamageParts.push(markBonus)
-    if (luckBonus > 0) displayedDamageParts.push(luckBonus)
-
-    player.turnDamage = [...(player.turnDamage || []), ...displayedDamageParts]
     if (ability.uses !== undefined) consume(player, ability)
-    const hit = dealDamage(opponent, firstDamage, events, `${player.name} causou ${firstDamage} de dano.`)
+    const hit = dealDamage(opponent, totalDamage + luckBonus, events, `${player.name} causou ${totalDamage + luckBonus} de dano.`)
     if (hit && opponent.character?.id === 'brick') {
       if (ability.damageType === 'punch') opponent.brickPunchesReceived += 1
       if (ability.damageType === 'kick') opponent.brickKicksReceived += 1
     }
-    if (luckBonus) {
-      notePassive(player, 'Ativou Sorte.')
-      events.push(`${player.name} ativou Sorte e causou 100 de dano extra.`)
-    }
+    if (luckBonus) events.push(`${player.name} ativou Sorte e causou 100 de dano extra.`)
     if (player.character?.id === 'kiro' && ability.id === 'basic' && player.kiroDoubleArmed) {
       player.kiroDoubleArmed = false
-      player.turnDamage.push(...displayedDamageParts)
+      player.turnDamage.push(damage)
       dealDamage(opponent, damage, events, `${player.name} repetiu o ataque com Ataque duplo e causou ${damage} de dano.`)
     }
     if (player.character?.id === 'kiro' && ability.id === 'basic') player.kiroStrengthBonus = 0
-    if (player.character?.id === 'zero' && opponent.hp < player.hp) {
-      healPlayer(player, Math.floor(totalDamage * .2), events)
-      notePassive(player, 'Ativou Modo Sobrevivência.')
-    }
+    if (player.character?.id === 'zero' && opponent.hp < player.hp) healPlayer(player, Math.floor(totalDamage * .2), events)
     if (opponent.character?.id === 'haku' && opponent.hakuBladeDanceArmed && ability.id === 'basic') {
       opponent.hakuBladeDanceArmed = false
       opponent.hakuBladeDanceResolvedTurn = state.turn
@@ -2991,21 +2853,14 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
     }
     if (opponent.character?.id === 'brick' && ability.id === 'basic' && Math.random() < .5) {
       player.hp = Math.max(0, player.hp - 25)
-      opponent.turnDamage = [...(opponent.turnDamage || []), 25]
+      player.turnDamage = [...(opponent.turnDamage || []), 25]
       events.push(`${opponent.name} ativou Contra-Golpe e acertou um Soco adicional.`)
     }
     trackCedricFrieza(opponent, ability, events)
   } else if (ability.kind === 'predatory') { player.pendingPredatory = true; player.predatoryExpiresTurn = state.turn + 1; consume(player, ability); events.push(`${player.name} armou o Ataque predatório para o próximo turno.`) }
-  else if (ability.kind === 'analysis') {
-    if (ability.predictedId && ability.predictedId === opponentAbility.id && opponentAbility.id !== 'basic') {
-      addZeroExperience(player, 30, events)
-      events.push(`${player.name} acertou Análise em ${ability.predictedName || opponentAbility.name} e ganhou 30 de experiência.`)
-    } else {
-      events.push(`${player.name} errou Análise.`)
-    }
-  }
+  else if (ability.kind === 'analysis') { player.zeroAnalysisArmed = true; events.push(`${player.name} analisará a próxima habilidade.`) }
   else if (ability.kind === 'zero-evolution' || ability.kind === 'zero-survival' || ability.kind === 'haku-last-dance' || ability.kind === 'haku-concentration') { events.push(`${player.name} manteve sua passiva ativa.`) }
-  else if (ability.kind === 'zero-best') { player.turnActionLabel = 'Ativou Sou o Melhor!'; consume(player, ability); events.push(`${player.name} preparou Sou o melhor!`) }
+  else if (ability.kind === 'zero-best') { consume(player, ability); events.push(`${player.name} preparou Sou o melhor!`) }
   else if (ability.kind === 'haku-defense') { player.hakuDefenseTurns = 3; consume(player, ability); events.push(`${player.name} entrou em Postura Defensiva.`) }
   else if (ability.kind === 'haku-dance') { if (player.hakuBladeDanceResolvedTurn !== state.turn) player.hakuBladeDanceArmed = true; events.push(`${player.name} preparou Dança da lâmina.`) }
   else if (ability.kind === 'haku-deep-cut') { opponent.hakuDeepCutTurns = 5; consume(player, ability); events.push(`${player.name} aplicou Corte Profundo.`) }
@@ -3038,35 +2893,21 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
   else if (ability.kind === 'retaliation') { if (player.brickDodges >= 2 && player.brickPunchesReceived >= 6 && player.brickKicksReceived >= 2) { dealDamage(opponent, 700, events, `${player.name} ativou Retaliação e causou 700 de dano.`); player.uses = Object.fromEntries(player.character.abilities.filter((item) => item.uses !== undefined).map((item) => [item.id, item.uses])); player.brickDodges = 0; player.brickPunchesReceived = 0; player.brickKicksReceived = 0 } }
   else if (ability.kind === 'dodge') { player.nextTurnDodge = true; consume(player, ability); events.push(`${player.name} preparou uma Esquiva.`) }
   else if (ability.kind === 'bindings') { opponent.forcedBasicTurns = 2; opponent.forcedBasicStartsTurn = state.turn + 1; opponent.basicDamageBonus = 100; opponent.basicDamageBonusExpiresTurn = state.turn + 3; consume(player, ability); events.push(`${player.name} amarrou ${opponent.name}: ele será forçado a usar 2 ataques básicos nos próximos 2 turnos e receberá +100 em cada um.`) }
-  else if (ability.kind === 'deny') {
-    player.rage -= 25
-    const targetId = ability.targetId || state.denyTargetAbilityId
-    const candidate = opponent.character.abilities.find((item) => item.id === targetId && item.id !== 'basic' && item.kind !== 'rage' && !isPassiveAbility(item)) || opponent.character.abilities.find((item) => item.id !== 'basic' && item.kind !== 'rage' && !isPassiveAbility(item))
-    if (candidate) {
-      opponent.blockedAbilityId = candidate.id
-      opponent.blockedAbilitySource = 'denial'
-      opponent.blockedAbilityUntilTurn = state.turn + 3
-      events.push(`${player.name} negou ${candidate.name} de ${opponent.name} por 2 turnos.`)
-    } else {
-      events.push(`${player.name} usou Negação, mas ${opponent.name} não tinha habilidade ativa para bloquear.`)
-    }
-    player.turnActionLabel = 'Ativou Negação.'
-    state.denyTargetAbilityId = ''
-  }
-  else if (ability.kind === 'ogro-grab') { opponent.ogroGrabbedTurns = 5; player.ogroGrabActive = true; assignOgroForcedAbility(opponent, player, 'grab'); consume(player, ability); events.push(`${player.name} agarrou ${opponent.name} pelo pescoço.`) }
+  else if (ability.kind === 'deny') { player.rage -= 25; const candidate = opponent.character.abilities.find((item) => item.id === state.denyTargetAbilityId && item.id !== 'basic' && item.kind !== 'rage') || opponent.character.abilities.find((item) => item.id !== 'basic' && item.kind !== 'rage'); if (candidate) { opponent.blockedAbilityId = candidate.id; opponent.blockedAbilitySource = 'denial'; opponent.blockedAbilityUntilTurn = state.turn + 3; events.push(`${player.name} negou ${candidate.name} de ${opponent.name} pelos próximos 2 turnos.`) } else { events.push(`${player.name} tentou negar, mas ${opponent.name} não tinha habilidade ativa para bloquear.`) } state.denyTargetAbilityId = '' }
+  else if (ability.kind === 'ogro-grab') { opponent.ogroGrabbedTurns = 5; player.ogroGrabActive = true; consume(player, ability); events.push(`${player.name} agarrou ${opponent.name} pelo pescoço.`) }
   else if (ability.kind === 'ogro-squeeze') { if (player.ogroGrabActive) dealDamage(opponent, 50, events, `${player.name} apertou ${opponent.name} e causou 50 de dano.`) }
-  else if (ability.kind === 'ogro-release') { player.ogroGrabActive = false; opponent.ogroGrabbedTurns = 0; opponent.ogroForcedAbilityId = null; opponent.ogroForcedAbilityName = ''; opponent.forcedRandomReason = ''; events.push(`${player.name} soltou ${opponent.name}.`) }
+  else if (ability.kind === 'ogro-release') { player.ogroGrabActive = false; opponent.ogroGrabbedTurns = 0; opponent.ogroForcedAbilityId = null; events.push(`${player.name} soltou ${opponent.name}.`) }
   else if (ability.kind === 'ogro-kick') { opponent.forcedSkipTurns = 1; opponent.forcedSkipReason = 'kick'; consume(player, ability); events.push(`${player.name} chutou ${opponent.name} para fora da arena.`) }
   else if (ability.kind === 'ogro-roar') { player.ogroRoarTurns = 2; consume(player, ability); events.push(`${player.name} rugiu e reduziu o dano recebido.`) }
-  else if (ability.kind === 'ogro-throw') { opponent.forcedRandomTurns = 1; assignOgroForcedAbility(opponent, player, 'throw'); consume(player, ability); events.push(`${player.name} jogou ${opponent.name} para o alto.`) }
+  else if (ability.kind === 'ogro-throw') { opponent.forcedRandomTurns = 1; consume(player, ability); events.push(`${player.name} jogou ${opponent.name} para o alto.`) }
   else if (ability.kind === 'kiro-reduction') { player.kiroReductionTurns = 2; consume(player, ability); events.push(`${player.name} ativou Redução de dano.`) }
   else if (ability.kind === 'kiro-strengthen') { player.kiroStrengthBonus += 100; consume(player, ability); events.push(`${player.name} fortaleceu o próximo ataque básico.`) }
   else if (ability.kind === 'kiro-disrupt') { opponent.forcedSkipTurns = 1; opponent.forcedSkipReason = 'disrupt'; consume(player, ability); events.push(`${player.name} atrapalhou ${opponent.name}.`) }
   else if (ability.kind === 'kiro-double') { player.kiroDoubleArmed = true; consume(player, ability); events.push(`${player.name} preparou Ataque duplo.`) }
   else if (ability.kind === 'sany-lucky') { const damage = Math.floor(200 + Math.random() * 451); const amplified = player.sanyAmplificationUntilTurn >= state.turn ? Math.floor(damage * 1.25) : damage; player.turnDamage = [...(player.turnDamage || []), amplified]; consume(player, ability); dealDamage(opponent, amplified, events, `${player.name} usou Ataque de sorte e causou ${amplified} de dano.`) }
   else if (ability.kind === 'sany-amplify') { player.sanyAmplificationUntilTurn = state.turn + 1; consume(player, ability); events.push(`${player.name} ativou Amplificação.`) }
-  else if (ability.kind === 'sany-research') { if (ability.predictedId === opponentAbility.id) { player.uses['lucky-attack'] += 1; events.push(`${player.name} acertou Pesquisa e ganhou 1 uso de Ataque de sorte.`) } else events.push(`${player.name} errou Pesquisa.`); consume(player, ability) }
-  else if (ability.kind === 'skip') { const recovered = player.character?.id === 'haku' ? healPlayer(player, 50, events) : 0; if (recovered > 0) notePassive(player, 'Ativou Concentração.'); events.push(recovered > 0 ? `${player.name} pulou turno e ativou Concentração, recuperando ${recovered} HP.` : `${player.name} pulou turno.`) }
+  else if (ability.kind === 'sany-research') { player.sanyResearchArmed = true; player.sanyResearchPrediction = randomAbilityId(opponent, player); consume(player, ability); events.push(`${player.name} iniciou Pesquisa.`) }
+  else if (ability.kind === 'skip') { const recovered = player.character?.id === 'haku' ? healPlayer(player, 50, events) : 0; events.push(recovered > 0 ? `${player.name} pulou turno e ativou Concentração, recuperando ${recovered} HP.` : `${player.name} pulou turno.`) }
   trackVossRumination(opponent, ability, events)
   if (ability.kind !== 'damage') trackCedricFrieza(opponent, ability, events)
   if (player.harvestTurns > 0) {
@@ -3087,11 +2928,9 @@ function applyAction(player, opponent, ability, opponentAbility, events, predato
   if (player.forcedRandomTurns > 0) player.forcedRandomTurns -= 1
   if (player.forcedSkipTurns > 0) player.forcedSkipTurns -= 1
   if (player.ogroGrabbedTurns > 0 || player.forcedRandomTurns > 0) {
-    assignOgroForcedAbility(player, opponent, player.ogroGrabbedTurns > 0 ? 'grab' : 'throw')
+    player.ogroForcedAbilityId = randomAbilityId(player, opponent)
   } else {
     player.ogroForcedAbilityId = null
-    player.ogroForcedAbilityName = ''
-    player.forcedRandomReason = ''
   }
   if (player.ogroRoarTurns > 0) player.ogroRoarTurns -= 1
   if (player.kiroReductionTurns > 0) player.kiroReductionTurns -= 1
@@ -3108,30 +2947,14 @@ function dealDamage(target, damage, events, message) { return receiveDamage(targ
 render()
 loadVideoManifest()
 restoreSession()
-startMusic()
-window.addEventListener('click', startMusic, { passive: true })
-window.addEventListener('pointerdown', startMusic, { passive: true })
-window.addEventListener('touchstart', startMusic, { passive: true })
-window.addEventListener('keydown', startMusic, { passive: true })
-setInterval(() => {
-  if (state.screen !== 'battle' && !state.updateInstalling) refreshWebUpdateNotice()
-}, 60000)
 
-checkWebUpdate().then((web) => {
-  if (web.available) {
+checkForUpdate().then((result) => {
+  state.updateError = result.available ? '' : (result.error || '')
+  if (result.available) {
     state.updateAvailable = true
-    state.updateManifest = { ...web.manifest, source: 'web' }
-    render()
-    return
+    state.updateManifest = result.manifest
+    if (state.screen === 'home') render()
   }
-  checkForUpdate().then((result) => {
-    state.updateError = result.available ? '' : (result.error || '')
-    if (result.available) {
-      state.updateAvailable = true
-      state.updateManifest = result.manifest
-      render()
-    }
-  })
 })
 
 getInstalledVersion().then((info) => {

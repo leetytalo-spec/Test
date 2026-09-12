@@ -11,7 +11,7 @@ import java.io.File;
 
 public class MainActivity extends BridgeActivity {
 	private static final String WEB_PREFS = "leet-web-update";
-	private static final int BUNDLED_WEB_VERSION = 70;
+	private static final int BUNDLED_WEB_VERSION = 71;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
