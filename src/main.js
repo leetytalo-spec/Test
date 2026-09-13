@@ -343,6 +343,7 @@ function renderGameHome() {
       <div class="home-copy home-welcome">
         <p class="intro welcome-line">Bem-vindo(a) ao <span>Leet Arena</span></p>
         <p class="intro choose-mode">Escolha o modo:</p>
+        <p class="intro">biscoito</p>
       </div>
       <div class="mode-selector rpg-mode-selector"><button class="primary-button ${isOnlineMode ? 'active' : ''}" data-action="show-online-mode">DUELO</button><button class="primary-button secondary ${isOfflineMode ? 'active' : ''}" data-action="show-offline-mode">MODO TESTE</button><button class="primary-button secondary ${isBattle2v2Mode ? 'active' : ''}" data-action="show-battle2v2-mode">BATALHA 2X2</button><button class="primary-button secondary ${isTournamentMode ? 'active' : ''}" data-action="show-tournament-mode">TORNEIOS</button></div>
     </div>
